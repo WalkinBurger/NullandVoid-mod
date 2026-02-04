@@ -1,0 +1,61 @@
+# This file will automatically update with entries for new content after a build and reload.
+
+
+
+
+# ==================== Items ====================
+Items: {
+	TestSword: {
+		DisplayName: Test Sword
+		Tooltip:
+			'''
+			Template of an item
+			Replacing this tooltip is duty 
+			It's snowing on Mt.Fuji
+			'''
+	}
+}
+
+# ==================== Keybinds ====================
+Keybinds: {
+	ParryKeybind.DisplayName: Parry Keybind
+	Parry.DisplayName: Parry
+}
+
+# ==================== Buffs ====================
+Buffs: {
+	ParryBuff: {
+		DisplayName: Parry Buff
+		Description: Mods.NullandVoid.Buffs.ParryBuff.Description
+	}
+}
+
+# ==================== Configs ====================
+Configs: {
+	NullandVoidClientConfig: {
+		DisplayName: Client Config
+		Headers.Parrying: Parrying
+
+		ParryingFrameFreezing: {
+			Label: Parrying Frame Freezing
+			Tooltip: The amount of frames that the screen freezes for after a parry. (0 to disable)
+		}
+
+		ParryingFlashIntensity: {
+			Label: Parrying Flash Intensity
+			Tooltip: The intensity of the flash that happens during the parry freeze frames. (0 to disable)
+		}
+
+		ParryingShakeIntensity: {
+			Label: Parrying Camera Shake Intensity
+			Tooltip: The intensity of the camera shake that happens after a parry. (0 to disable)
+		}
+
+		ParryingSoundVolume: {
+			Label: Parry Sound Effects Volume
+			Tooltip: The volume of the sound effects that plays after a parry. (0 to disable)
+		}
+	}
+
+	NullandVoidServerConfig.DisplayName: Nulland Void Server Config
+}

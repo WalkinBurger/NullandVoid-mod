@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "Terraria": {
+      "commandName": "Executable",
+      "executablePath": "/usr/share/dotnet/dotnet",
+      "commandLineArgs": "$(tMLPath) -skipselect modding:modding world",
+      "workingDirectory": "$(tMLSteamPath)"
+    },
+    "TerrariaServer": {
+      "commandName": "Executable",
+      "executablePath": "/usr/share/dotnet/dotnet",
+      "commandLineArgs": "$(tMLServerPath) -skipselect modding:modding world",
+      "workingDirectory": "$(tMLSteamPath)"
+    }
+  }
+}
