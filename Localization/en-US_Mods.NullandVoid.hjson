@@ -18,15 +18,20 @@ Items: {
 
 # ==================== Keybinds ====================
 Keybinds: {
-	ParryKeybind.DisplayName: Parry Keybind
 	Parry.DisplayName: Parry
+	Dash.DisplayName: Dash
 }
 
 # ==================== Buffs ====================
 Buffs: {
 	ParryBuff: {
-		DisplayName: Parry Buff
-		Description: Mods.NullandVoid.Buffs.ParryBuff.Description
+		DisplayName: Parry
+		Description: Parry your enemy's damage
+	}
+
+	LungedBuff: {
+		DisplayName: Lunged Buff
+		Description: 0.5 second of contact damage immunity and doubles the melee damage after dashing
 	}
 }
 

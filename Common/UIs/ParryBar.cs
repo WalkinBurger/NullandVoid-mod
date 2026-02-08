@@ -18,8 +18,8 @@ namespace NullandVoid.Common.UIs
 
 		public override void OnInitialize() {
 			area = new UIElement();
-			area.Left.Set(-350, 1f);
-			area.Top.Set(30, 0f);
+			area.Left.Set(-380, 1f);
+			area.Top.Set(15, 0f);
 			area.Width.Set(128, 0f);
 			area.Height.Set(40, 0f);
 

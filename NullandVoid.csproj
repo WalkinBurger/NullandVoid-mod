@@ -9,7 +9,8 @@
 
     </PropertyGroup>
     <ItemGroup>
-        <Folder Include="Assets\Texture\"/>
+        <Folder Include="Assets\Sounds\" />
+        <Folder Include="Assets\Textures\" />
         <Folder Include="Content\Items\Weapons\"/>
     </ItemGroup>
 

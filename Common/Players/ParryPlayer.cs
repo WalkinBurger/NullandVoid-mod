@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -32,7 +31,9 @@ namespace NullandVoid.Common.Players
 
 		// Parrying others
 		private int parryEffectTimer = -1;
-
+		private Vector2 knockBackVelocity;
+		private Vector2 totalKnockBack = Vector2.One;
+		
 		// Reset parrying stats
 		private void ResetParry() {
 			ParryRegenRate = 10f;
@@ -60,12 +61,12 @@ namespace NullandVoid.Common.Players
 			if (parryTimer >= 10 / ParryRegenRate && ParryResource < ParryResourceMax) {
 				ParryResource++;
 				if (ParryResource == ParryResourceMax) {
-					SoundEngine.PlaySound(SoundID.MaxMana);
+					SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.5f * ModContent.GetInstance<NullandVoidClientConfig>().ParryingSoundVolume, PitchVariance = 0.5f, Pitch = 0.75f});
 				}
 				parryTimer = 0;
 			}
 			ParryResource = Utils.Clamp(ParryResource, 0, ParryResourceMax);
-
+			
 			if (Player.HasBuff(ModContent.BuffType<ParryBuff>())) {
 				GetSurroundingProjectiles();
 			}
@@ -77,7 +78,8 @@ namespace NullandVoid.Common.Players
 			else if (parryEffectTimer == 0) {
 				ModContent.GetInstance<ParryFlashSystem>().Hide();
 				parryEffectTimer = -1;
-
+				totalKnockBack = Vector2.One;
+				
 				float parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParryingSoundVolume;
 				if (parrySoundVolume != 0) {
 					SoundEngine.PlaySound(SoundID.NPCHit16 with { Volume = 1f * parrySoundVolume });
@@ -90,6 +92,7 @@ namespace NullandVoid.Common.Players
 						(Main.rand.NextFloat() * (float)Math.PI).ToRotationVector2(), 6.5f * parryShakeIntensity, 10f,
 						20, 1000f, FullName));
 				}
+				ParryVisual(Player.position, knockBackVelocity);
 			}
 		}
 
@@ -107,42 +110,53 @@ namespace NullandVoid.Common.Players
 		// A dodge with parry buff indicates a successful parry
 		public override bool ConsumableDodge(Player.HurtInfo info) {
 			if (Player.HasBuff(ModContent.BuffType<ParryBuff>())) {
-				float parryPercision = ParryDamage(info);
-				ParryEffects(Player.whoAmI, parryPercision);
+				(float parryPercision, Vector2 selfKnockBack) = ParryDamage(info);
+				ParryEffects(Player.whoAmI, parryPercision, selfKnockBack);
+				Main.LocalPlayer.GetModPlayer<StaminaPlayer>().AddStaminaResource((int)Math.Sqrt(parryPercision));
 				return true;
 			}
 
 			return false;
 		}
 
+		private void ParryVisual(Vector2 parryPos, Vector2 knockBackVector) {
+			Projectile parryVisual = Projectile.NewProjectileDirect(Player.GetSource_FromThis(), parryPos, knockBackVector, ProjectileID.FinalFractal, 0, 0);
+			parryVisual.timeLeft = 15;
+			parryVisual.light = 1f;
+			parryVisual.soundDelay = 16;
+
+			for (int i = 0; i < 10; i++) {
+				Dust.NewDustDirect(parryPos, 10, 100, DustID.Firefly, Scale: 5f);
+			}
+		}
+
 		// Visual & sound effects for a successful parry
-		private void ParryEffects(int whoAmI, float parryPercision) {
+		private void ParryEffects(int whoAmI, float parryPercision, Vector2 knockBackVector) {
 			float parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParryingSoundVolume;
-			Vector2 parryPos = Main.player[whoAmI].Center;
+			Player parryPlayer = Main.player[whoAmI];
+			Vector2 parryPos = parryPlayer.Center;
 			
 			if (parrySoundVolume != 0) {
-				SoundEngine.PlaySound(SoundID.Research with { Volume = 0.7f * parrySoundVolume}, parryPos);
-				SoundEngine.PlaySound(SoundID.Item52 with { Volume = 3f * parrySoundVolume, Pitch = 1.3f }, parryPos);
-				SoundEngine.PlaySound(SoundID.CoinPickup with { Volume = 3f * parrySoundVolume }, parryPos);
+				SoundEngine.PlaySound(SoundID.Research with { Volume = 0.3f + 0.05f * parrySoundVolume * parryPercision}, parryPos);
+				SoundEngine.PlaySound(SoundID.Item52 with { Volume = 3f * parrySoundVolume, Pitch = 0.9f + 0.05f * parryPercision}, parryPos);
+				SoundEngine.PlaySound(SoundID.CoinPickup with { Volume = 3f * parrySoundVolume}, parryPos);
 			}
+			
 
-			for (int i = 0; i < (int)(3 * parryPercision); i++) {
-				Vector2 spread = Main.rand.NextVector2Circular((float)Math.Sqrt(parryPercision), (float)Math.Sqrt(parryPercision));
-				short dustType = i % 2 == 1 ? DustID.GoldCoin : DustID.Smoke;
-				Dust.NewDustPerfect(parryPos, dustType, spread);
-			}
-			Lighting.AddLight(parryPos, 1f,0.9f,0.8f);
 			
 			if (Player.whoAmI != Main.myPlayer) {
 				return;
 			}
 
-			// Client sided effects
 			Player.SetImmuneTimeForAllTypes(ParryIFrame);
+
+			// Client sided effects
 			if (parryEffectTimer > -1) {
 				// Don't apply effects if already in effect
 				return;
 			}
+
+			knockBackVelocity = knockBackVector;
 			
 			parryEffectTimer = ModContent.GetInstance<NullandVoidClientConfig>().ParryingFrameFreezing;
 			if (parryEffectTimer != 0) {
@@ -150,8 +164,7 @@ namespace NullandVoid.Common.Players
 				int freezeHeight = Main.instance.GraphicsDevice.PresentationParameters.BackBufferHeight;
 				Color[] freezeColors = new Color[freezeWidth * freezeHeight];
 				Main.instance.GraphicsDevice.GetBackBufferData(freezeColors);
-				float parryFlashIntensity =
-					ModContent.GetInstance<NullandVoidClientConfig>().ParryingFlashIntensity;
+				float parryFlashIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryingFlashIntensity;
 				if (parryFlashIntensity != 0f) {
 					for (int i = 0; i < freezeColors.Length; i++) {
 						freezeColors[i].R = (byte)Utils.Clamp(freezeColors[i].R + (int)(255 * parryFlashIntensity),
@@ -170,12 +183,12 @@ namespace NullandVoid.Common.Players
 			}
 
 			if (Main.netMode != NetmodeID.SinglePlayer) {
-				SendParryDodgeMessage(Player.whoAmI, parryPercision);
+				SendParryDodgeMessage(Player.whoAmI, parryPercision, knockBackVector);
 			}
 		}
 
 		// Parry the damage
-		private float ParryDamage(Player.HurtInfo info) {
+		private (float parryPercision, Vector2 selfKnockBack) ParryDamage(Player.HurtInfo info) {
 			Vector2 selfKnockBack = new();
 			int damageReflected = 0;
 			float parryPercision = 0;
@@ -185,15 +198,17 @@ namespace NullandVoid.Common.Players
 				NPC parriedNPC = Main.npc[info.DamageSource.SourceNPCIndex];
 				Vector2 appoarchVelocity = Player.velocity - parriedNPC.velocity;
 				parryPercision = (float)Math.Sqrt(Math.Pow(appoarchVelocity.X, 2) + Math.Pow(appoarchVelocity.Y, 2) * 2);
-				damageReflected = (int)(info.Damage * (0.5 + parryPercision / 8));
+				damageReflected = (int)(info.Damage * (0.5 + parryPercision / 10));
 				Main.NewText(("Approch velocity: ", parryPercision, "Damage reflected/healed: ", damageReflected));
 				parriedNPC.SimpleStrikeNPC(damageReflected, -info.HitDirection, false, 4 + parryPercision / 2);
-				selfKnockBack = appoarchVelocity * (1f - parriedNPC.knockBackResist);
+				selfKnockBack = appoarchVelocity;
+				selfKnockBack.Normalize();
+				selfKnockBack *= (1f - parriedNPC.knockBackResist) * (float)Math.Sqrt(appoarchVelocity.Length()) * 4;
 			}
 			// Projectiles damage
 			else if (info.DamageSource.SourceProjectileLocalIndex != -1) {
 				Projectile parriedProjectile = Main.projectile[info.DamageSource.SourceProjectileLocalIndex];
-				parryPercision = (GetParryBuffRemainingTime() / 2) + 1;
+				parryPercision = ((float)GetParryBuffRemainingTime() / 2) + 1;
 				(selfKnockBack, damageReflected) = ReflectProjectile(parriedProjectile, parryPercision);
 				
 				// Sync parried projectiles
@@ -207,20 +222,24 @@ namespace NullandVoid.Common.Players
 			}
 			
 			if (damageReflected != 0) {
-				Player.Heal(damageReflected);
+				Player.Heal(damageReflected / 4);
 			}
 			if (selfKnockBack != Vector2.Zero) {
-				Player.velocity -= selfKnockBack;
+				Player.velocity -= selfKnockBack / (Utils.Clamp(Math.Abs(Player.velocity.Length()) * 0.5f, 1f, 10f));
+				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			}
 
-			return parryPercision;
+			return (parryPercision, selfKnockBack);
 		}
 		
 		// Reflects parried projectile
 		private (Vector2 selfKnockBack, int damageReflected) ReflectProjectile(Projectile parriedProjectile, float parryPercision) {
 			Vector2 selfKnockBack = parriedProjectile.velocity;
-			selfKnockBack.Normalize();
-			selfKnockBack *= -3 * (float)Math.Sqrt(parryPercision);
+			if (selfKnockBack != Vector2.Zero)
+			{
+				selfKnockBack.Normalize();
+				selfKnockBack *= -1.5f * ((float)Math.Sqrt(parryPercision + 10) - 1);
+			}
 			
 			if (parriedProjectile.hostile) {
 				parriedProjectile.friendly = true;
@@ -231,15 +250,16 @@ namespace NullandVoid.Common.Players
 				parriedProjectile.damage = (int)(Math.Sqrt(parryPercision) * 2 * parriedProjectile.damage);
 			}
 			else {
-				parriedProjectile.velocity *= (float)Math.Sqrt(parryPercision) * 0.75f;
-				parriedProjectile.damage = (int)(parryPercision * parriedProjectile.damage * 0.6);
+				parriedProjectile.velocity *= Utils.Clamp((float)Math.Sqrt(parryPercision) / (parriedProjectile.velocity.Length() * 0.1f + 0.5f), 1f, 5f);
+				parriedProjectile.damage = (int)(Math.Sqrt(parryPercision) * 2 * parriedProjectile.damage);
 				selfKnockBack *= -1.5f;
 			}
 
+			parriedProjectile.knockBack *= 2;
 			parriedProjectile.reflected = true;
 			Main.NewText(parryPercision);
 			
-			int damageReflected = (int)(parriedProjectile.oldVelocity.Length() * parryPercision);
+			int damageReflected = (int)(parriedProjectile.oldVelocity.Length() * Math.Sqrt(parryPercision) * Math.Sqrt(parriedProjectile.damage) * 0.5f);
 			
 			return (selfKnockBack, damageReflected);
 		}
@@ -251,7 +271,7 @@ namespace NullandVoid.Common.Players
 			foreach (Projectile projectile in Main.ActiveProjectiles) {
 				float distance = Vector2.Distance(Player.Center, projectile.position);
 				bool ownProjectile = projectile.friendly;
-				if (projectile.reflected || projectile.damage == 0 || distance > 80) {
+				if (projectile.reflected || projectile.damage == 0 || distance > 80 || projectile.minion || projectile.DamageType == DamageClass.Melee) {
 					continue;
 				}
 				if (multiplayerClient && projectile.owner != Player.whoAmI && projectile.owner != 255) {
@@ -260,13 +280,15 @@ namespace NullandVoid.Common.Players
 
 				float parryPercision = Utils.Clamp(GetParryBuffRemainingTime() - distance / 8, 1f, 10f);
 				Main.NewText(parryPercision);
-				ParryEffects(Player.whoAmI, parryPercision);
 				(Vector2 selfKnockBack, int damageReflected) = ReflectProjectile(projectile, parryPercision);
+				ParryEffects(Player.whoAmI, parryPercision, selfKnockBack);
 				if (damageReflected != 0 && !ownProjectile) {
-					Player.Heal(damageReflected);
+					Player.Heal(damageReflected / 4);
 				}
 				if (selfKnockBack != Vector2.Zero) {
-					Player.velocity -= selfKnockBack + Player.velocity;
+					Player.velocity -= selfKnockBack / (totalKnockBack * 0.75f);
+					totalKnockBack +=  selfKnockBack;
+					NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 				}
 
 				if (Main.netMode != NetmodeID.SinglePlayer) {
@@ -285,11 +307,12 @@ namespace NullandVoid.Common.Players
 		}
 
 		// Packets sending and handling methods
-		private static void SendParryDodgeMessage(int whoAmI, float parryPercision) {
+		private static void SendParryDodgeMessage(int whoAmI, float parryPercision, Vector2 knockBackVector) {
 			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
 			packet.Write((byte)NullandVoid.MessageType.ParryDodge);
 			packet.Write((byte)whoAmI);
 			packet.Write(parryPercision);
+			packet.WriteVector2(knockBackVector);
 			packet.Send(ignoreClient: whoAmI);
 		}
 
@@ -305,11 +328,12 @@ namespace NullandVoid.Common.Players
 		public static void HandleParryDodgeMessage(BinaryReader reader, int whoAmI) {
 			int player = reader.ReadByte();
 			float parryPercision = reader.ReadSingle();
+			Vector2 knockBackVector = reader.ReadVector2();
 			if (Main.netMode == NetmodeID.Server) {
 				player = whoAmI;
-				SendParryDodgeMessage(player,  parryPercision);
+				SendParryDodgeMessage(player,  parryPercision, knockBackVector);
 			}
-			Main.player[player].GetModPlayer<ParryPlayer>().ParryEffects(player, parryPercision);
+			Main.player[player].GetModPlayer<ParryPlayer>().ParryEffects(player, parryPercision, knockBackVector);
 		}
 		
 		public static void HandleParryProjectileMessage(BinaryReader reader, int whoAmI) {
