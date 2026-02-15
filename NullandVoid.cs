@@ -10,11 +10,8 @@ namespace NullandVoid
 			MessageType msgType = (MessageType)reader.ReadByte();
 
 			switch (msgType) {
-				case MessageType.ParryDodge:
-					ParryPlayer.HandleParryDodgeMessage(reader, whoAmI);
-					break;
-				case MessageType.ParryProjectile:
-					ParryPlayer.HandleParryProjectileMessage(reader, whoAmI);
+				case MessageType.ParryEffects:
+					ParryPlayer.HandleParryEffectsMessage(reader, whoAmI);
 					break;
 				default:
 					Logger.WarnFormat("Null and Void: Unknown Message type: {0}", msgType);
@@ -24,8 +21,7 @@ namespace NullandVoid
 
 		internal enum MessageType : byte
 		{
-			ParryDodge,
-			ParryProjectile,
+			ParryEffects,
 		}
 	}
 }

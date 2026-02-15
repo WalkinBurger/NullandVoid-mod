@@ -1,3 +1,4 @@
+using NullandVoid.Common.Players;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -10,8 +11,7 @@ namespace NullandVoid.Content.Buffs
 		}
 
 		public override void Update(Player player, ref int buffIndex) {
-			player.GiveImmuneTimeForCollisionAttack(30);
-			player.GetDamage(DamageClass.Melee) *= 2;
+			player.GetDamage(DamageClass.Melee) *= 3;
 		}
 	}
 }

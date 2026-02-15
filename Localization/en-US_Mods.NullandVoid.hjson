@@ -24,14 +24,9 @@ Keybinds: {
 
 # ==================== Buffs ====================
 Buffs: {
-	ParryBuff: {
-		DisplayName: Parry
-		Description: Parry your enemy's damage
-	}
-
 	LungedBuff: {
 		DisplayName: Lunged Buff
-		Description: 0.5 second of contact damage immunity and doubles the melee damage after dashing
+		Description: Doubles your melee damage for 1 second after dashing
 	}
 }
 
@@ -41,26 +36,23 @@ Configs: {
 		DisplayName: Client Config
 		Headers.Parrying: Parrying
 
-		ParryingFrameFreezing: {
-			Label: Parrying Frame Freezing
-			Tooltip: The amount of frames that the screen freezes for after a parry. (0 to disable)
-		}
-
 		ParryingFlashIntensity: {
 			Label: Parrying Flash Intensity
-			Tooltip: The intensity of the flash that happens during the parry freeze frames. (0 to disable)
+			Tooltip: The intensity of the flash after parrying. (0 to disable)
 		}
 
 		ParryingShakeIntensity: {
 			Label: Parrying Camera Shake Intensity
-			Tooltip: The intensity of the camera shake that happens after a parry. (0 to disable)
+			Tooltip: The intensity of the camera shake after parrying. (0 to disable)
 		}
 
 		ParryingSoundVolume: {
 			Label: Parry Sound Effects Volume
-			Tooltip: The volume of the sound effects that plays after a parry. (0 to disable)
+			Tooltip: The volume of the sound effects after parrying. (0 to disable)
 		}
 	}
 
 	NullandVoidServerConfig.DisplayName: Nulland Void Server Config
 }
+
+Projectiles.ParrySwordProjectile.DisplayName: Parry Sword Projectile

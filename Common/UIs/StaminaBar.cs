@@ -9,39 +9,54 @@ using Terraria.UI;
 
 namespace NullandVoid.Common.UIs
 {
-	public class StaminaBar : UIState
+	internal class StaminaBar : UIState
 	{
 		private UIElement area;
-		private Asset<Texture2D> barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar");
-		private Asset<Texture2D> barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarFull");
+		private static Texture2D barEmpty;
+		private static Texture2D barFull;
+		private static int barWidth;
+		private static int barHeight;
+		private Rectangle areaRect;
 		
 		public override void OnInitialize() {
 			area = new UIElement();
-			area.Left.Set(-475, 1f);
+			area.Left.Set(-450, 1f);
 			area.Top.Set(15, 0f);
+
+			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar", AssetRequestMode.ImmediateLoad).Value;
+			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarFull", AssetRequestMode.ImmediateLoad).Value;
+			
+			barWidth = barEmpty.Width;
+			barHeight = barEmpty.Height;
+			
 			Append(area);
 		}
 
 		public override void Draw(SpriteBatch spriteBatch) {
 			base.Draw(spriteBatch);
 			
-			StaminaPlayer modPlayer = Main.LocalPlayer.GetModPlayer<StaminaPlayer>();
-			float staminaRatio = (float)modPlayer.StaminaResource / 20;
-			int staminaBars = modPlayer.StaminaMax / 20;
-			Rectangle areaRect = area.GetInnerDimensions().ToRectangle();
+			StaminaPlayer staminaPlayer = Main.LocalPlayer.GetModPlayer<StaminaPlayer>();
+			areaRect = area.GetInnerDimensions().ToRectangle();
+			float staminaRatio = (float)staminaPlayer.StaminaResource / 20;
+			int staminaBars = staminaPlayer.StaminaMax / 20;
 			for (int i = 0; i < staminaBars; i++) {
-				Vector2 barOrigin = new Vector2(areaRect.Left - i * 55, areaRect.Top);
-				spriteBatch.Draw(barEmpty.Value, barOrigin, Color.White);
+				Vector2 barOrigin = new Vector2(areaRect.Left - i * 50, areaRect.Top);
+				spriteBatch.Draw(barEmpty, barOrigin, Color.White);
 
 				if (staminaRatio <= i) {
 					continue;
 				}
 				
-				int barOffset = (int)(barFull.Width() * (1 - (staminaRatio - i)));
+				int barOffset = (int)(barWidth * (1 - (staminaRatio - i)));
 				Color barColor = Color.White;
 				barColor.A = barColor.R = barColor.G = barColor.B = staminaRatio - i >= 1f ? (byte)255 : (byte)128;
 
-				spriteBatch.Draw(barFull.Value, new Vector2(barOrigin.X + barOffset, barOrigin.Y), new Rectangle(barOffset, 0, barFull.Width() - barOffset, barFull.Height()), barColor);
+				spriteBatch.Draw(
+					barFull,
+					new Vector2(barOrigin.X + barOffset, barOrigin.Y),
+					new Rectangle(barOffset, 0, barWidth - barOffset, barHeight),
+					barColor
+				);
 			}
 		}
 	}

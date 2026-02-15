@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using NullandVoid.Common.Systems;
 using NullandVoid.Content.Buffs;
@@ -31,7 +30,7 @@ namespace NullandVoid.Common.Players
 		
 		// Reset stamina stats
 		private void ResetStamina() {
-			StaminaMax = 60;
+			StaminaMax = 40;
 			StaminaRegenRate = 1.5f;
 			StaminaUsage = 20;
 			DashTime = 12;
@@ -78,8 +77,8 @@ namespace NullandVoid.Common.Players
 
 		public override void ProcessTriggers(TriggersSet triggersSet) {
 			if (KeybindSystem.DashKeybind.JustPressed && StaminaResource >= StaminaUsage) {
-				AddStaminaResource(-StaminaUsage);
-				if (!Player.mount.Active) {
+				if (!Player.mount.Active && Player.grapCount == 0) {
+					AddStaminaResource(-StaminaUsage);
 					DashFrame = DashTime;
 					dashDirection = (int)triggersSet.DirectionsRaw.X;
 					if (dashDirection == 0) {
@@ -100,15 +99,17 @@ namespace NullandVoid.Common.Players
 						preDashVelocity = Player.velocity;
 						Player.velocity.X = 20 * Player.direction;
 					}
+					
+					Player.SetImmuneTimeForAllTypes(DashTime);
 				}
 
 				// Check for long dash
-				if (!longDash && !canLongDash && Player.velocity.Y == 0f &&
-				    Collision.SolidCollision(Player.Bottom, Player.width, 1, true)) {
+				if (!longDash && !canLongDash && (((Player.velocity.Y == 0f || Player.sliding) && Player.releaseJump) || (Player.autoJump && Player.justJumped))) {
 					canLongDash = true;
 				}
 				else if (canLongDash && Player.velocity.Y != 0f && StaminaResource >= StaminaUsage) {
 					// Is long dash
+					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = -0.2f, Volume = 0.3f});
 					AddStaminaResource(-StaminaUsage);
 					longDash = true;
 					canLongDash = false;
@@ -119,8 +120,8 @@ namespace NullandVoid.Common.Players
 			if (DashFrame == 1) {
 				// End of dash
 				if (!longDash) {
-					Player.velocity.X = (Player.velocity.X + preDashVelocity.X) / 2f;
-					Player.AddBuff(ModContent.BuffType<LungedBuff>(), 30);
+					Player.velocity.X = (Math.Max(Math.Abs(preDashVelocity.X), 3.5f) + 2) * dashDirection;
+					Player.AddBuff(ModContent.BuffType<LungedBuff>(), 60);
 				}
 
 				preDashVelocity = Vector2.Zero;
@@ -137,6 +138,7 @@ namespace NullandVoid.Common.Players
 			}
 			
 			Player.noKnockback = true;
+			Player.immuneAlpha = 1;
 			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			DashFrame--;
 		}
