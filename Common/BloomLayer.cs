@@ -10,6 +10,12 @@ namespace NullandVoid.Common
 {
 	public class BloomLayer : PlayerDrawLayer
 	{
+		private float parryFlashIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryFlashIntensity;
+
+		public void ChangeConfig() {
+			parryFlashIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryFlashIntensity;
+		}
+		
 		public override bool GetDefaultVisibility(PlayerDrawSet drawInfo) {
 			return drawInfo.drawPlayer.GetModPlayer<ParryPlayer>().ParryFrame != 0;
 		}
@@ -21,7 +27,7 @@ namespace NullandVoid.Common
 			ParryPlayer parryPlayer = player.GetModPlayer<ParryPlayer>();
 			StaminaPlayer staminaPlayer =  player.GetModPlayer<StaminaPlayer>();
 			
-			float t = (float)Math.Pow((float)parryPlayer.ParryFrame / 20, 4) * ModContent.GetInstance<NullandVoidClientConfig>().ParryingFlashIntensity;
+			float t = MathF.Pow((float)parryPlayer.ParryFrame / 20, 4) * parryFlashIntensity;
 			if (staminaPlayer.DashFrame != 0) {
 				t -= 0.15f;
 			}
@@ -42,7 +48,8 @@ namespace NullandVoid.Common
 				player.compositeBackArm.rotation,
 				new Vector2(bloom.Width / 2, bloom.Height / 2),
 				1 + 0.25f * (parryPlayer.ParriedNPCs.Count + parryPlayer.ParriedProjectiles.Count),
-				SpriteEffects.None, 0));
+				SpriteEffects.None, 0)
+			);
 		}
 	}
 }

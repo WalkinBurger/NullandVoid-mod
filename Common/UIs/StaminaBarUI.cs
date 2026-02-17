@@ -9,7 +9,7 @@ using Terraria.UI;
 
 namespace NullandVoid.Common.UIs
 {
-	internal class StaminaBar : UIState
+	internal class StaminaBarUI : UIState
 	{
 		private UIElement area;
 		private static Texture2D barEmpty;
@@ -17,11 +17,17 @@ namespace NullandVoid.Common.UIs
 		private static int barWidth;
 		private static int barHeight;
 		private Rectangle areaRect;
+
+		private bool showStaminaUI;
+
+		public void ChangeConfig() {
+			showStaminaUI = ModContent.GetInstance<NullandVoidClientConfig>().ShowStaminaUI;
+		}
 		
 		public override void OnInitialize() {
 			area = new UIElement();
-			area.Left.Set(-450, 1f);
-			area.Top.Set(15, 0f);
+			area.Left.Set(-450, 1);
+			area.Top.Set(15, 0);
 
 			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar", AssetRequestMode.ImmediateLoad).Value;
 			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarFull", AssetRequestMode.ImmediateLoad).Value;
@@ -30,9 +36,15 @@ namespace NullandVoid.Common.UIs
 			barHeight = barEmpty.Height;
 			
 			Append(area);
+			
+			ChangeConfig();
 		}
 
 		public override void Draw(SpriteBatch spriteBatch) {
+			if (!showStaminaUI) {
+				return;
+			}
+			
 			base.Draw(spriteBatch);
 			
 			StaminaPlayer staminaPlayer = Main.LocalPlayer.GetModPlayer<StaminaPlayer>();
@@ -64,13 +76,13 @@ namespace NullandVoid.Common.UIs
 	[Autoload(Side = ModSide.Client)]
 	internal class StaminaBarSystem : ModSystem
 	{
-		internal StaminaBar StaminaBar;
+		internal StaminaBarUI StaminaBarUI;
 		private UserInterface StaminaBarUserInterface;
 
 		public override void Load() {
-			StaminaBar = new StaminaBar();
+			StaminaBarUI = new StaminaBarUI();
 			StaminaBarUserInterface = new UserInterface();
-			StaminaBarUserInterface.SetState(StaminaBar);
+			StaminaBarUserInterface.SetState(StaminaBarUI);
 		}
 
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {

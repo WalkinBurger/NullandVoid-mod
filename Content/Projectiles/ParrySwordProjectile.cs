@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using NullandVoid.Common.Players;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -22,6 +23,7 @@ namespace NullandVoid.Content.Projectiles
 		
 		public override bool PreDraw(ref Color lightColor) {
 			Player player = Main.player[Projectile.owner];
+			int parryDirection = player.GetModPlayer<ParryPlayer>().ParryDirection;
 
 			if (ParrySword == -1) {
 				Item item = player.HeldItem;
@@ -45,8 +47,8 @@ namespace NullandVoid.Content.Projectiles
 			
 			Main.instance.LoadItem(ParrySword);
 			Texture2D swordTexture = TextureAssets.Item[ParrySword].Value;
-			float swordAngle = player.compositeBackArm.rotation + 1.2f * player.direction;
-			if (player.direction == -1) {
+			float swordAngle = player.compositeBackArm.rotation + 1.2f * parryDirection;
+			if (parryDirection == -1) {
 				swordAngle += MathHelper.Pi * 1.5f;
 			}
 
@@ -68,8 +70,8 @@ namespace NullandVoid.Content.Projectiles
 				SpriteEffects.None
 			);
 
-			float t = Math.Clamp((float)Math.Pow((float)(Projectile.timeLeft - 5) / 15, 3), 0, 1) - 0.15f;
-			float slashAngle = swordAngle - 0.65f * player.direction;
+			float t = Math.Clamp(MathF.Pow((float)(Projectile.timeLeft - 5) / 15, 3), 0, 1) - 0.15f;
+			float slashAngle = swordAngle - 0.65f * parryDirection;
 			Main.EntitySpriteDraw(
 				slashTexture,
 				armPosition + screenCenter,
@@ -87,9 +89,12 @@ namespace NullandVoid.Content.Projectiles
 		public override void AI() {
 			Player player = Main.player[Projectile.owner];
 			float parryFrame = (float)(20 - Projectile.timeLeft) / 20;
+			int parryDirection = player.GetModPlayer<ParryPlayer>().ParryDirection;
 
-			float t = (float)Math.Pow(parryFrame, 3) - 0.75f * parryFrame - 1.25f * (float)Math.Pow(2, parryFrame * -20);
-			float armAngle = t * player.direction * MathHelper.PiOver2 + Projectile.knockBack;
+			player.direction = parryDirection;
+			
+			float t = MathF.Pow(parryFrame, 3) - 0.75f * parryFrame - 1.25f * MathF.Pow(2, parryFrame * -20);
+			float armAngle = t * parryDirection * MathHelper.PiOver2 + Projectile.knockBack;
 			player.SetCompositeArmBack(true, Projectile.timeLeft > 15 ? Player.CompositeArmStretchAmount.Quarter : Player.CompositeArmStretchAmount.Full, armAngle);
 		}
 	}

@@ -9,7 +9,6 @@ using Terraria.Audio;
 using Terraria.GameInput;
 using Terraria.Graphics.CameraModifiers;
 using Terraria.ID;
-using Terraria.IO;
 using Terraria.ModLoader;
 
 namespace NullandVoid.Common.Players
@@ -26,10 +25,21 @@ namespace NullandVoid.Common.Players
 		public List<int> ParriedProjectiles = [];
 		public List<int> ParriedNPCs = [];
 		public float ParryAngle;
+		public int ParryDirection;
 		private int parryTimer;
 		private int parryWindow;
 		private int parryRange;
+		private int projectileBoostCount;
 		
+		private float parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume;
+		private float parryShakeIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryShakeIntensity;
+
+
+		public void ChangeConfig() {
+			parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume;
+			parryShakeIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryShakeIntensity;
+			Main.NewText(parrySoundVolume);
+		}
 		
 		// Reset parrying stats
 		private void ResetParry() {
@@ -62,8 +72,8 @@ namespace NullandVoid.Common.Players
 			if (parryTimer >= 5 && ParryResource < ParryResourceMax) {
 				ParryResource += ParryRegenRate;
 				if (ParryResource >= ParryResourceMax) {
-					ParryResource = Utils.Clamp(ParryResource, 0, ParryResourceMax);
-					SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.3f * ModContent.GetInstance<NullandVoidClientConfig>().ParryingSoundVolume, PitchVariance = 0.5f, Pitch = 0.3f});
+					ParryResource = Math.Clamp(ParryResource, 0, ParryResourceMax);
+					SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.4f * parrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f});
 				}
 				parryTimer = 0;
 			}
@@ -73,14 +83,12 @@ namespace NullandVoid.Common.Players
 				(List<int> parryingProjectiles, List<int> parryingNPCs) = GetParried();
 				int parryCount = parryingProjectiles.Count + parryingNPCs.Count;
 				if (parryCount != 0) {
-					foreach (int i in parryingProjectiles) {
-						if (Main.projectile[i].friendly) {
-							parryCount--;
-						}
-					}
 					ParryReflect(parryingProjectiles, parryingNPCs);
-					Main.LocalPlayer.GetModPlayer<StaminaPlayer>().AddStaminaResource(5 * parryCount);
+					if (parryCount - projectileBoostCount != 0) {
+						Main.LocalPlayer.GetModPlayer<StaminaPlayer>().AddStaminaResource(5 * parryCount - projectileBoostCount);
+					}
 				}
+				Player.ChangeDir(ParryDirection);
 			}
 
 			if (ParryFrame != 0) {
@@ -93,7 +101,9 @@ namespace NullandVoid.Common.Players
 				parryWindow = ParryWindowMax;
 				ParriedNPCs.Clear();
 				ParriedProjectiles.Clear();
-				ParryAngle = (float)Math.Atan((Main.MouseScreen.Y - Main.screenHeight / 2) / (Math.Abs(Main.MouseScreen.X - Main.screenWidth / 2) * Player.direction));
+				projectileBoostCount = 0;
+				ParryAngle = MathF.Atan((Main.MouseScreen.Y - Main.screenHeight / 2) / (Math.Abs(Main.MouseScreen.X - Main.screenWidth / 2) * Player.direction));
+				ParryDirection = (int)Math.Clamp(Main.MouseScreen.X - Main.screenWidth / 2, -1, 1);
 				
 				AddParryResource(-ParryUsage);
 				ParryEffects(Player.whoAmI, 0, Player.Center);
@@ -102,13 +112,12 @@ namespace NullandVoid.Common.Players
 
 		public void ParryEffects(int whoAmI, int parryCount, Vector2 parryPosition) {
 			Player player = Main.player[whoAmI];
-			float parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParryingSoundVolume;
 
 			if (parryCount == 0) {
-				SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing with {Volume = 0.8f * parrySoundVolume, Pitch = 0.2f}, player.Center);
+				SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing with {Volume = parrySoundVolume, Pitch = 0.2f}, player.Center);
 			}
 			else {
-				SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryHit") with {Volume = 0.8f * parrySoundVolume, PitchVariance = 0.2f, Pitch = (parryCount - 1) * 0.1f}, player.Center);
+				SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryHit") with {Volume = parrySoundVolume, PitchVariance = 0.2f, Pitch = (parryCount - 1) * 0.1f}, player.Center);
 				
 				for (int i = 0; i < 8; i++) {
 					Dust dust = Dust.NewDustDirect(parryPosition, 10, 10, DustID.Firework_Yellow, Scale: 0.6f);
@@ -122,8 +131,7 @@ namespace NullandVoid.Common.Players
 			}
 
 			if (parryCount != 0) {
-				float parryShakeIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryingShakeIntensity;
-				Main.instance.CameraModifiers.Add(new PunchCameraModifier(Player.Center, (Main.rand.NextFloat() * (float)Math.PI).ToRotationVector2(), 8f * parryShakeIntensity, 7.5f, 15, 1000f, FullName));
+				Main.instance.CameraModifiers.Add(new PunchCameraModifier(Player.Center, (Main.rand.NextFloat() * MathHelper.Pi).ToRotationVector2(), 8f * parryShakeIntensity, 7.5f, 15, 1000f, FullName));
 			}
 			else if (!(!Player.HeldItem.IsAir && Player.HeldItem is { melee: true, pick: 0, axe: 0, useStyle: ItemUseStyleID.Swing or ItemUseStyleID.Rapier })) {
 				Projectile.NewProjectile(Player.GetSource_FromThis(), Player.Center, Vector2.Zero, ModContent.ProjectileType<ParrySwordProjectile>(), 0, ParryAngle, Main.myPlayer);
@@ -170,6 +178,7 @@ namespace NullandVoid.Common.Players
 		public void ParryReflect(List<int> parryingProjectiles, List<int> parryingNPCs) {
 			Vector2 knockbackVelocity = Vector2.Zero;
 			int parriedDamage = 0;
+			int tempProjectileBoostCount = 0;
 				
 			foreach (int i in parryingProjectiles) {
 				ParriedProjectiles.Add(i);
@@ -179,6 +188,10 @@ namespace NullandVoid.Common.Players
 					projectile.friendly = true;
 					projectile.velocity *= -1;
 					parriedDamage += (int)(projectile.damage * 1.5f);
+				}
+				else {
+					projectileBoostCount++;
+					tempProjectileBoostCount++;
 				}
 
 				projectile.damage *= 2;
@@ -195,7 +208,7 @@ namespace NullandVoid.Common.Players
 				ParriedNPCs.Add(i);
 				NPC npc = Main.npc[i];
 				Vector2 approachVelocity = Player.velocity - npc.velocity;
-				npc.SimpleStrikeNPC(npc.damage * 2, Player.direction, false, (float)Math.Sqrt(approachVelocity.Length() + 10) + 5);
+				npc.SimpleStrikeNPC(npc.damage * 2, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5);
 				
 				parriedDamage += npc.damage / 2;
 				knockbackVelocity = approachVelocity;
@@ -204,7 +217,7 @@ namespace NullandVoid.Common.Players
 				
 			}
 
-			ParryAngle = (float)Math.Atan(knockbackVelocity.Y / knockbackVelocity.X);
+			ParryAngle = MathF.Atan(knockbackVelocity.Y / knockbackVelocity.X);
 			ParryFrame = 20;
 			int parryCount = ParriedProjectiles.Count + ParriedNPCs.Count;
 			
@@ -214,6 +227,15 @@ namespace NullandVoid.Common.Players
 			}
 			
 			Player.fallStart = Player.position.ToTileCoordinates().Y;
+			
+			int tempParryCount = parryingProjectiles.Count + parryingNPCs.Count - tempProjectileBoostCount;
+			StylePlayer stylePlayer = Player.GetModPlayer<StylePlayer>();
+			if (tempParryCount != 0) {
+				stylePlayer.AddStyleBonus(StyleBonusesList.Parry, tempParryCount);
+			}
+			if (projectileBoostCount != 0) {
+				stylePlayer.AddStyleBonus(StyleBonusesList.ProjectileBoost, tempProjectileBoostCount);
+			}
 
 			ParryEffects(Player.whoAmI, parryCount, Player.Center + knockbackVelocity * 16);
 			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);			

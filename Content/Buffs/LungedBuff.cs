@@ -12,6 +12,8 @@ namespace NullandVoid.Content.Buffs
 
 		public override void Update(Player player, ref int buffIndex) {
 			player.GetDamage(DamageClass.Melee) *= 3;
+			player.GetModPlayer<StylePlayer>().Lunging = true;
+			
 		}
 	}
 }

@@ -10,7 +10,7 @@ using Terraria.UI;
 
 namespace NullandVoid.Common.UIs
 {
-	internal class ParryBar : UIState
+	internal class ParryBarUI : UIState
 	{
 		private UIElement area;
 		private static Texture2D barEmpty;
@@ -22,12 +22,16 @@ namespace NullandVoid.Common.UIs
 		private Rectangle barFrame;
 		Color barColor = Color.White;
 
+		private bool showParryUI;
+
+		public void ChangeConfig() {
+			showParryUI = ModContent.GetInstance<NullandVoidClientConfig>().ShowParryUI;
+		}
+		
 		public override void OnInitialize() {
 			area = new UIElement();
-			area.Left.Set(-360, 1f);
-			area.Top.Set(15, 0f);
-			area.Width.Set(128, 0f);
-			area.Height.Set(40, 0f);
+			area.Left.Set(-360, 1);
+			area.Top.Set(15, 0);
 
 			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBar", AssetRequestMode.ImmediateLoad).Value;
 			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBarFullAnim", AssetRequestMode.ImmediateLoad).Value;
@@ -35,16 +39,22 @@ namespace NullandVoid.Common.UIs
 			barHeight = barEmpty.Height;
 
 			barEmptyUI = new UIImage(barEmpty);
-			barEmptyUI.Left.Set(0, 0f);
-			barEmptyUI.Top.Set(0, 0f);
+			barEmptyUI.Left.Set(0, 0);
+			barEmptyUI.Top.Set(0, 0);
 			barEmptyUI.Color.A = 255;
 			
 			
 			area.Append(barEmptyUI);
 			Append(area);
+			
+			ChangeConfig();
 		}
 
 		public override void Draw(SpriteBatch spriteBatch) {
+			if (!showParryUI) {
+				return;
+			}
+			
 			base.Draw(spriteBatch);
 			
 			barFrame = barEmptyUI.GetInnerDimensions().ToRectangle();
@@ -77,13 +87,13 @@ namespace NullandVoid.Common.UIs
 	[Autoload(Side = ModSide.Client)]
 	internal class ParryBarSystem : ModSystem
 	{
-		internal ParryBar ParryBar;
+		internal ParryBarUI ParryBarUI;
 		private UserInterface ParryBarUserInterface;
 		
 		public override void Load() {
-			ParryBar = new ParryBar();
+			ParryBarUI = new ParryBarUI();
 			ParryBarUserInterface = new UserInterface();
-			ParryBarUserInterface.SetState(ParryBar);
+			ParryBarUserInterface.SetState(ParryBarUI);
 		}
 
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {

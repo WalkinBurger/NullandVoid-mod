@@ -27,6 +27,12 @@ namespace NullandVoid.Common.Players
 		private bool longDash;
 		private bool canLongDash;
 
+		private float staminaSoundVolume;
+
+		public void ChangeConfig() {
+			staminaSoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume;
+		}
+
 		
 		// Reset stamina stats
 		private void ResetStamina() {
@@ -55,13 +61,12 @@ namespace NullandVoid.Common.Players
 			if (staminaTimer >= 10 / StaminaRegenRate && StaminaResource < StaminaMax) {
 				StaminaResource++;
 				if (StaminaResource % 20 == 0) {
-					SoundEngine.PlaySound(SoundID.Item53 with {Volume = 0.5f, Pitch = ((float)StaminaResource / StaminaMax) - 0.5f});
+					SoundEngine.PlaySound(SoundID.Item53 with {Volume = 0.7f * staminaSoundVolume, Pitch = ((float)StaminaResource / StaminaMax) - 0.5f});
 				}
 
 				staminaTimer = 0;
 			}
-
-			StaminaResource = Utils.Clamp(StaminaResource, 0, StaminaMax);
+			StaminaResource = Math.Clamp(StaminaResource, 0, StaminaMax);
 
 			if (DashFrame > 0) {
 				StaminaDash();
@@ -109,7 +114,7 @@ namespace NullandVoid.Common.Players
 				}
 				else if (canLongDash && Player.velocity.Y != 0f && StaminaResource >= StaminaUsage) {
 					// Is long dash
-					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = -0.2f, Volume = 0.3f});
+					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = -0.2f, Volume = 0.4f * staminaSoundVolume});
 					AddStaminaResource(-StaminaUsage);
 					longDash = true;
 					canLongDash = false;

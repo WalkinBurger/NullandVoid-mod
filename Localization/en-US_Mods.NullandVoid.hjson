@@ -1,8 +1,5 @@
 # This file will automatically update with entries for new content after a build and reload.
 
-
-
-
 # ==================== Items ====================
 Items: {
 	TestSword: {
@@ -34,25 +31,71 @@ Buffs: {
 Configs: {
 	NullandVoidClientConfig: {
 		DisplayName: Client Config
-		Headers.Parrying: Parrying
 
-		ParryingFlashIntensity: {
-			Label: Parrying Flash Intensity
-			Tooltip: The intensity of the flash after parrying. (0 to disable)
+		Headers: {
+			Parrying: Parrying
+			StyleMeter: Style Meter Header
 		}
 
-		ParryingShakeIntensity: {
-			Label: Parrying Camera Shake Intensity
-			Tooltip: The intensity of the camera shake after parrying. (0 to disable)
+		ParryFlashIntensity: {
+			Label: Flash intensity
+			Tooltip: Intensity of the flash after parrying. (0 to disable)
 		}
 
-		ParryingSoundVolume: {
-			Label: Parry Sound Effects Volume
-			Tooltip: The volume of the sound effects after parrying. (0 to disable)
+		ParryShakeIntensity: {
+			Label: Camera shake intensity
+			Tooltip: Intensity of the camera shake after parrying. (0 to disable)
+		}
+
+		ParrySoundVolume: {
+			Label: Sound effects volume
+			Tooltip: Volume of the sound effects after parrying. (0 to disable)
+		}
+
+		MaxStyleBonuses: {
+			Label: Max style bonuses
+			Tooltip: Maximum amount of style bonuses that can be displayed at once (0 to disable)
+		}
+
+		StyleBonusFadeTime: {
+			Label: Fade time
+			Tooltip: Time in seconds for style bonuses to show before fading
+		}
+		
+		StyleMeterHideTime: {
+			Label: Hide after seconds inactive
+			Tooltip: Inactive time in seconds needed for the style meter to be hidden (0 to disable)
+		}
+		
+		StyleMeterEaseSpeed: {
+			Label: Easing speed
+			Tooltip: Easing speed for style bonuses (0 to disable)
 		}
 	}
 
-	NullandVoidServerConfig.DisplayName: Nulland Void Server Config
+	NullandVoidServerConfig.DisplayName: Server Config
 }
 
+# ==================== Projectiles ====================
 Projectiles.ParrySwordProjectile.DisplayName: Parry Sword Projectile
+
+# ==================== Style ====================
+Style: {
+	Ranks: {
+		Dull: Dull
+		Cool: Cool
+		Ballistic: Ballistic
+		Abyssal: Abyssal!
+		Shattered: Shattered!!
+		Terraific: TERRA-IFIC!!!
+		Null: NULL
+	}
+
+	Bonuses: {
+		Kill: + KILL
+		MultiKill: + MULTIKILL
+		Parry: + PARRY
+		ProjectileBoost: + PROJECTILE BOOST
+		Lunge: + LUNGE
+	}
+}
