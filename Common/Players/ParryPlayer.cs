@@ -38,7 +38,6 @@ namespace NullandVoid.Common.Players
 		public void ChangeConfig() {
 			parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume;
 			parryShakeIntensity = ModContent.GetInstance<NullandVoidClientConfig>().ParryShakeIntensity;
-			Main.NewText(parrySoundVolume);
 		}
 		
 		// Reset parrying stats
@@ -187,7 +186,7 @@ namespace NullandVoid.Common.Players
 					projectile.hostile = false;
 					projectile.friendly = true;
 					projectile.velocity *= -1;
-					parriedDamage += (int)(projectile.damage * 1.5f);
+					parriedDamage += (int)(projectile.damage * 2f);
 				}
 				else {
 					projectileBoostCount++;
@@ -210,7 +209,7 @@ namespace NullandVoid.Common.Players
 				Vector2 approachVelocity = Player.velocity - npc.velocity;
 				npc.SimpleStrikeNPC(npc.damage * 2, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5);
 				
-				parriedDamage += npc.damage / 2;
+				parriedDamage += npc.damage;
 				knockbackVelocity = approachVelocity;
 				knockbackVelocity.Normalize();
 				Player.velocity -= knockbackVelocity * approachVelocity.Length() * (1 - npc.knockBackResist);
@@ -221,8 +220,9 @@ namespace NullandVoid.Common.Players
 			ParryFrame = 20;
 			int parryCount = ParriedProjectiles.Count + ParriedNPCs.Count;
 			
-			int parryHeal = parriedDamage / parryCount;
+			int parryHeal = 2 * parriedDamage / (parryCount + 1);
 			if (parryHeal != 0) {
+				Main.NewText((parriedDamage, parryCount));
 				Player.Heal(parryHeal);
 			}
 			

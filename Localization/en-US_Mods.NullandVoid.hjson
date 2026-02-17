@@ -34,7 +34,8 @@ Configs: {
 
 		Headers: {
 			Parrying: Parrying
-			StyleMeter: Style Meter Header
+			StyleMeter: Style Meter
+			Stamina: Stamina
 		}
 
 		ParryFlashIntensity: {
@@ -61,15 +62,35 @@ Configs: {
 			Label: Fade time
 			Tooltip: Time in seconds for style bonuses to show before fading
 		}
-		
+
 		StyleMeterHideTime: {
 			Label: Hide after seconds inactive
 			Tooltip: Inactive time in seconds needed for the style meter to be hidden (0 to disable)
 		}
-		
+
 		StyleMeterEaseSpeed: {
 			Label: Easing speed
 			Tooltip: Easing speed for style bonuses (0 to disable)
+		}
+
+		ShowParryUI: {
+			Label: Show parry UI
+			Tooltip: ""
+		}
+
+		ShowStaminaUI: {
+			Label: Show stamina UI
+			Tooltip: ""
+		}
+
+		StaminaSoundVolume: {
+			Label: Stamina sound volume
+			Tooltip: Volume of the refilling & long dash sound
+		}
+
+		ShowStyleMeterUI: {
+			Label: Show style meter UI
+			Tooltip: ""
 		}
 	}
 
@@ -88,7 +109,7 @@ Style: {
 		Abyssal: Abyssal!
 		Shattered: Shattered!!
 		Terraific: TERRA-IFIC!!!
-		Null: NULL
+		Null: ?NULL&#
 	}
 
 	Bonuses: {

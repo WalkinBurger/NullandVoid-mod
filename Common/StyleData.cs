@@ -14,10 +14,10 @@ namespace NullandVoid.Common
 	
 	internal static class StyleBonusesList
 	{
-		internal static readonly StyleBonus MultiKill = new ("MultiKill", 100, 2, null, 1.15f);
+		internal static readonly StyleBonus MultiKill = new ("MultiKill", 100, 2, null, 1.2f);
 		
 		internal static readonly StyleBonus Kill = new("Kill", 50, 0, MultiKill, 1.15f);
-		internal static readonly StyleBonus Parry = new ("Parry", 75, 2, null, 1.15f);
+		internal static readonly StyleBonus Parry = new ("Parry", 75, 2, null, 1.25f);
 		internal static readonly StyleBonus ProjectileBoost = new ("ProjectileBoost", 20, 1,  null, 0.5f);
 		internal static readonly StyleBonus Lunge = new ("Lunge", 25, 0);
 	}

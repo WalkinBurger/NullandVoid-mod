@@ -22,11 +22,8 @@ namespace NullandVoid.Common.UIs
 		private Rectangle barFrame;
 		Color barColor = Color.White;
 
-		private bool showParryUI;
+		internal bool showParryUI;
 
-		public void ChangeConfig() {
-			showParryUI = ModContent.GetInstance<NullandVoidClientConfig>().ShowParryUI;
-		}
 		
 		public override void OnInitialize() {
 			area = new UIElement();
@@ -43,11 +40,8 @@ namespace NullandVoid.Common.UIs
 			barEmptyUI.Top.Set(0, 0);
 			barEmptyUI.Color.A = 255;
 			
-			
 			area.Append(barEmptyUI);
 			Append(area);
-			
-			ChangeConfig();
 		}
 
 		public override void Draw(SpriteBatch spriteBatch) {
@@ -94,8 +88,13 @@ namespace NullandVoid.Common.UIs
 			ParryBarUI = new ParryBarUI();
 			ParryBarUserInterface = new UserInterface();
 			ParryBarUserInterface.SetState(ParryBarUI);
+			ChangeConfig();
 		}
 
+		public void ChangeConfig() {
+			ParryBarUI.showParryUI = ModContent.GetInstance<NullandVoidClientConfig>().ShowParryUI;
+		}
+		
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
 			int mouseTextIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Resource Bars"));
 			if (mouseTextIndex != -1) {
