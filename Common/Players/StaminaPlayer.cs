@@ -24,14 +24,8 @@ namespace NullandVoid.Common.Players
 		public int DashTime;
 		private Vector2 preDashVelocity;
 		private int dashDirection;
-		private bool longDash;
-		private bool canLongDash;
-
-		private float staminaSoundVolume;
-
-		public void ChangeConfig() {
-			staminaSoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume;
-		}
+		public bool DashJump;
+		private bool canDashJump;
 
 		
 		// Reset stamina stats
@@ -61,7 +55,7 @@ namespace NullandVoid.Common.Players
 			if (staminaTimer >= 10 / StaminaRegenRate && StaminaResource < StaminaMax) {
 				StaminaResource++;
 				if (StaminaResource % 20 == 0) {
-					SoundEngine.PlaySound(SoundID.Item53 with {Volume = 0.7f * staminaSoundVolume, Pitch = ((float)StaminaResource / StaminaMax) - 0.5f});
+					SoundEngine.PlaySound(SoundID.Item53 with {Volume = 0.7f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume, Pitch = ((float)StaminaResource / StaminaMax) - 0.5f});
 				}
 
 				staminaTimer = 0;
@@ -82,23 +76,31 @@ namespace NullandVoid.Common.Players
 
 		public override void ProcessTriggers(TriggersSet triggersSet) {
 			if (KeybindSystem.DashKeybind.JustPressed && StaminaResource >= StaminaUsage) {
-				if (!Player.mount.Active && Player.grapCount == 0) {
+				if (!Player.mount.Active && Player.grapCount == 0 && DashTime - DashFrame > 10) {
 					AddStaminaResource(-StaminaUsage);
 					DashFrame = DashTime;
 					dashDirection = (int)triggersSet.DirectionsRaw.X;
 					if (dashDirection == 0) {
 						dashDirection = Player.direction;
 					}
-					
+					Player.AddBuff(ModContent.BuffType<LungedBuff>(), 45);
+					if (Main.netMode != NetmodeID.SinglePlayer) {
+						NetHandler.SendSoundMessage(Player.whoAmI, NetHandler.Sounds.Dash);
+					}
+					else {
+						SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = 0.6f, Volume = 0.3f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume, PitchVariance = 0.2f});
+					}
 				}
 			}
 		}
 
 		public void StaminaDash() {
+			bool multiplayer = Main.netMode != NetmodeID.SinglePlayer;
+			
 			if ((DashTime - DashFrame) <= 5) {
 				if (DashFrame == DashTime) {
 					// Start of Dash
-					canLongDash = longDash = false;
+					canDashJump = DashJump = false;
 					
 					if (preDashVelocity == Vector2.Zero) {
 						preDashVelocity = Player.velocity;
@@ -108,31 +110,35 @@ namespace NullandVoid.Common.Players
 					Player.SetImmuneTimeForAllTypes(DashTime);
 				}
 
-				// Check for long dash
-				if (!longDash && !canLongDash && (((Player.velocity.Y == 0f || Player.sliding) && Player.releaseJump) || (Player.autoJump && Player.justJumped))) {
-					canLongDash = true;
+				// Check for dash jump
+				if (!DashJump && !canDashJump && Player.GetModPlayer<MovementMiscPlayer>().Grounded) {
+					canDashJump = true;
 				}
-				else if (canLongDash && Player.velocity.Y != 0f && StaminaResource >= StaminaUsage) {
-					// Is long dash
-					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = -0.2f, Volume = 0.4f * staminaSoundVolume});
+				else if (canDashJump && Player.velocity.Y != 0f && StaminaResource >= StaminaUsage) {
+					// Is long dash jump
+					if (multiplayer) {
+						NetHandler.SendSoundMessage(Player.whoAmI, NetHandler.Sounds.DashJump);
+					}
+					else {
+						SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = -0.2f, Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume});
+					}
 					AddStaminaResource(-StaminaUsage);
-					longDash = true;
-					canLongDash = false;
+					DashJump = true;
+					canDashJump = false;
 					Player.velocity.X *= 1.5f;
 				}
 			}
 
 			if (DashFrame == 1) {
 				// End of dash
-				if (!longDash) {
+				if (!DashJump) {
 					Player.velocity.X = (Math.Max(Math.Abs(preDashVelocity.X), 3.5f) + 2) * dashDirection;
-					Player.AddBuff(ModContent.BuffType<LungedBuff>(), 60);
 				}
 
 				preDashVelocity = Vector2.Zero;
 			}
 			else {
-				if (!longDash) {
+				if (!DashJump) {
 					Player.velocity.X = dashDirection * Math.Clamp(Math.Abs(Player.velocity.X) - 1f, 12, 20);
 					Player.velocity.Y = Math.Clamp(Player.velocity.Y, -5f, 0.5f);
 				}
@@ -144,8 +150,11 @@ namespace NullandVoid.Common.Players
 			
 			Player.noKnockback = true;
 			Player.immuneAlpha = 1;
-			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			DashFrame--;
+			
+			if (multiplayer) {
+				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
+			}
 		}
 		
 		public override void DrawPlayer(Camera camera) {

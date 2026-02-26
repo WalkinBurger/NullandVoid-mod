@@ -17,9 +17,6 @@ namespace NullandVoid.Common.UIs
 		private static int barWidth;
 		private static int barHeight;
 		private Rectangle areaRect;
-
-		internal bool showStaminaUI;
-
 		
 		public override void OnInitialize() {
 			area = new UIElement();
@@ -36,7 +33,7 @@ namespace NullandVoid.Common.UIs
 		}
 
 		public override void Draw(SpriteBatch spriteBatch) {
-			if (!showStaminaUI) {
+			if (!ModContent.GetInstance<NullandVoidClientConfig>().ShowStaminaUI) {
 				return;
 			}
 			
@@ -78,10 +75,6 @@ namespace NullandVoid.Common.UIs
 			StaminaBarUI = new StaminaBarUI();
 			StaminaBarUserInterface = new UserInterface();
 			StaminaBarUserInterface.SetState(StaminaBarUI);
-		}
-		
-		public void ChangeConfig() {
-			StaminaBarUI.showStaminaUI = ModContent.GetInstance<NullandVoidClientConfig>().ShowStaminaUI;
 		}
 
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {

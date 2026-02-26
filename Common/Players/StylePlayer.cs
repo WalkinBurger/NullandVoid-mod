@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Xna.Framework;
+using NullandVoid.Common.Globals.Items;
 using Terraria;
+using Terraria.Audio;
+using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace NullandVoid.Common.Players
@@ -20,33 +24,43 @@ namespace NullandVoid.Common.Players
 		public StyleRank PlayerStyleRank = StyleRanksList.Dull;
 		public List<PlayerStyleBonus> PlayerStyleBonuses = [];
 		private int styleTimer;
-		private int styleLoseThreshold = 5;
+		private int styleLoseThreshold = 7;
 		private int styleLoseRate = 1;
+
+		public int ScorePoints;
+
+		public float WeaponFreshness;
+		public bool ResetFreshnessNext;
+		public float FreshnessDecayRate;
+		private int freshnessTimer;
 		
-		private int styleBonusFadeTime = 60 * ModContent.GetInstance<NullandVoidClientConfig>().StyleBonusFadeTime;
-
 		public bool Lunging;
-
+		public int QuickDrawWindow;
+		
 
 		public override void ResetEffects() {
 			Lunging = false;
+			FreshnessDecayRate = 1f;
+		}
+
+		public override void UpdateDead() {
+			StylePoints = 0;
+			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
+				ScorePoints /= 2;
+			}
 		}
 
 
-		public void ChangeConfig() {
-			styleBonusFadeTime = 60 * ModContent.GetInstance<NullandVoidClientConfig>().StyleBonusFadeTime;
-		}
-		
 		public void UpdateStyleRank() {
 			if (StylePoints < PlayerStyleRank.LowerBound) {
 				PlayerStyleRank = StyleRanksList.List[PlayerStyleRank.Rank - 1];
-				styleLoseThreshold++;
-				styleLoseRate = Math.Min(PlayerStyleRank.Rank + 1, 3);
+				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
+				styleLoseRate = PlayerStyleRank.LoseRate;
 			}
 			else if (PlayerStyleRank != StyleRanksList.Null && StylePoints >= PlayerStyleRank.UpperBound) {
 				PlayerStyleRank = StyleRanksList.List[PlayerStyleRank.Rank + 1];
-				styleLoseThreshold--;
-				styleLoseRate = Math.Min(PlayerStyleRank.Rank + 1, 3);
+				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
+				styleLoseRate = PlayerStyleRank.LoseRate;
 			}
 		}
 
@@ -54,7 +68,7 @@ namespace NullandVoid.Common.Players
 			for (int i = 0; i < PlayerStyleBonuses.Count; i++) {
 				PlayerStyleBonus styleBonus = PlayerStyleBonuses[i];
 				styleBonus.TimeAlive++;
-				if (styleBonus.TimeAlive > styleBonusFadeTime) {
+				if (styleBonus.TimeAlive > ModContent.GetInstance<NullandVoidClientConfig>().StyleBonusFadeTime * 60) {
 					PlayerStyleBonuses.RemoveAt(i--);
 					i++;
 				}
@@ -62,7 +76,20 @@ namespace NullandVoid.Common.Players
 		}
 
 		public void CalcAddPoints(int rawPoints, int count, float weight) {
-			StylePoints += (int)(rawPoints * (1 + Math.Log10(count) * weight));
+			int calcPoints = (int)(rawPoints * (WeaponFreshness + 0.25f) * (1 + MathF.Log10(count) * weight));
+			StylePoints += calcPoints;
+			if (ResetFreshnessNext) {
+				WeaponFreshness = 1;
+				ResetFreshnessNext = false;
+			}
+			else if (WeaponFreshness > 0) {
+				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 2048, 0, 0.05f);
+				WeaponFreshness = Math.Max(WeaponFreshness, 0);
+				freshnessTimer = 0;
+			}
+			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
+				ScorePoints += calcPoints;
+			}
 		}
 		
 		public void AddStyleBonus(StyleBonus bonusType, int count = 1) {
@@ -109,6 +136,7 @@ namespace NullandVoid.Common.Players
 		
 		
 		public override void PostUpdateMiscEffects() {
+			freshnessTimer++;
 			styleTimer++;
 			if (styleTimer >= styleLoseThreshold && StylePoints != 0) {
 				StylePoints = Math.Max(StylePoints - styleLoseRate, 0);
@@ -117,6 +145,10 @@ namespace NullandVoid.Common.Players
 			}
 			UpdateStyleBonuses();
 
+			if (freshnessTimer >= 12) {
+				WeaponFreshness = Math.Min(1f, WeaponFreshness + 0.01f);
+				freshnessTimer = 0;
+			}
 			/*
 			List<string> bonuses = [];
 			foreach (PlayerStyleBonus styleBonus in PlayerStyleBonuses.ToArray()) {
@@ -124,15 +156,66 @@ namespace NullandVoid.Common.Players
 			}
 			Main.NewText((StylePoints, styleLoseThreshold, styleLoseRate, PlayerStyleRank.Name, string.Join(" | ",  bonuses)));
 			*/
+
+			if (QuickDrawWindow != 0) {
+				QuickDrawWindow--;
+			}
+		}
+
+		public override void OnHurt(Player.HurtInfo info) {
+			StylePoints -= info.Damage / 2;
+			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
+				ScorePoints -= info.Damage / 2;
+			}
 		}
 
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
 			if (!target.active) {
+				bool airKill = true;
+				for (int i = 0; i < 2; i++) {
+					if (WorldGen.SolidTile2( Framing.GetTileSafely(target.Bottom.ToTileCoordinates() + new Point(0, i)))) {
+						airKill = false;
+						break;
+					}
+				}
+				if (airKill) {
+					if (Player.HeldItem.useStyle == SwordGlobalItem.SwordUseStyle) {
+						AddStyleBonus(StyleBonusesList.Uppercut);
+					}
+					else if (hit.DamageType == DamageClass.Ranged) {
+						AddStyleBonus(StyleBonusesList.Airshot);
+					}
+				}
+
+				if (Main.netMode == NetmodeID.MultiplayerClient && Main.CurrentFrameFlags.ActivePlayersCount > 1) {
+					bool selfInteraction = false;
+					for (int i = 0; i < Main.CurrentFrameFlags.ActivePlayersCount; i++) {
+						if (!target.playerInteraction[i]) {
+							continue;
+						}
+						if (selfInteraction) {
+							AddStyleBonus(StyleBonusesList.Assist);
+							break;
+						}
+						selfInteraction = true;
+					}
+				}
+
+				if (damageDone > target.lifeMax * 3) {
+					AddStyleBonus(StyleBonusesList.Overkill);
+				}
 				AddStyleBonus(StyleBonusesList.Kill);
 			}
 			if (Lunging && hit.DamageType == DamageClass.Melee) {
 				Lunging = false;
-				AddStyleBonus(StyleBonusesList.Lunge);
+				SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundMiss with { Volume = 0.75f, Pitch = 0.5f }, Player.Center);
+				Player.GiveImmuneTimeForCollisionAttack(30);
+				AddStyleBonus(Player.GetModPlayer<StaminaPlayer>().DashJump ? StyleBonusesList.LongLunge : StyleBonusesList.Lunge);
+			}
+
+			if (QuickDrawWindow != 0 && hit.DamageType != DamageClass.Summon) {
+				AddStyleBonus(StyleBonusesList.QuickDraw);
+				QuickDrawWindow = 0;
 			}
 		}
 	}

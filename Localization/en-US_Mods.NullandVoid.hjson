@@ -59,18 +59,18 @@ Configs: {
 		}
 
 		StyleBonusFadeTime: {
-			Label: Fade time
+			Label: Style bonus fade time
 			Tooltip: Time in seconds for style bonuses to show before fading
 		}
 
 		StyleMeterHideTime: {
-			Label: Hide after seconds inactive
+			Label: Hide UI after seconds inactive
 			Tooltip: Inactive time in seconds needed for the style meter to be hidden (0 to disable)
 		}
 
-		StyleMeterEaseSpeed: {
-			Label: Easing speed
-			Tooltip: Easing speed for style bonuses (0 to disable)
+		StyleMeterEase: {
+			Label: Style bonus easing
+			Tooltip: Toggle for style bonuses to ease in & out
 		}
 
 		ShowParryUI: {
@@ -98,9 +98,19 @@ Configs: {
 }
 
 # ==================== Projectiles ====================
-Projectiles.ParrySwordProjectile.DisplayName: Parry Sword Projectile
+Projectiles: {
+	ParrySwordProjectile.DisplayName: Parry Sword Projectile
+	SlashProjectile.DisplayName: Slash Projectile
+	GlowStarProjectile.DisplayName: Glow Star Projectile
+	SwordSlashProjectile.DisplayName: Sword Slash Projectile
+}
 
-# ==================== Style ====================
+# ==================== UIs ====================
+UI: {
+    FreshnessText: Freshness
+}
+
+# ==================== Styles ====================
 Style: {
 	Ranks: {
 		Dull: Dull
@@ -113,10 +123,17 @@ Style: {
 	}
 
 	Bonuses: {
+		Assist: + ASSIST
 		Kill: + KILL
+		Lunge: + LUNGE
+		Pogo: + POGO
+		Overkill: + OVERKILL
+		QuickDraw: + QUICK DRAW
+		Airshot: + AIRSHOT
+		ProjectileBoost: + PROJECTILE BOOST
+		Uppercut: + UPPERCUT
+		LongLunge: + LONG LUNGE
 		MultiKill: + MULTIKILL
 		Parry: + PARRY
-		ProjectileBoost: + PROJECTILE BOOST
-		Lunge: + LUNGE
 	}
 }

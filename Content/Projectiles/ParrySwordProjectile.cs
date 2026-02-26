@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using NullandVoid.Common.Players;
+using NullandVoid.Common.Globals.Items;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -14,6 +14,9 @@ namespace NullandVoid.Content.Projectiles
 		public int ParrySword = -1;
 		Texture2D slashTexture = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Slash").Value;
 
+		public override string Texture {
+			get { return "NullandVoid/Assets/Textures/Slash"; }
+		}
 
 		public override void SetDefaults() {
 			Projectile.timeLeft = 20;
@@ -23,17 +26,16 @@ namespace NullandVoid.Content.Projectiles
 		
 		public override bool PreDraw(ref Color lightColor) {
 			Player player = Main.player[Projectile.owner];
-			int parryDirection = player.GetModPlayer<ParryPlayer>().ParryDirection;
 
 			if (ParrySword == -1) {
 				Item item = player.HeldItem;
-				if (!item.IsAir && item is { melee: true, pick: 0, axe: 0, useStyle: ItemUseStyleID.Swing or ItemUseStyleID.Rapier }) {
+				if (!item.IsAir && (item.useStyle == SwordGlobalItem.SwordUseStyle || item.useStyle == ItemUseStyleID.Rapier)) {
 					ParrySword = item.type;
 				}
 				else {
 					for (int i = 0; i < 10; i++) {
 						item = player.inventory[i];
-						if (!item.IsAir && item is { melee: true, pick: 0, axe: 0, useStyle: ItemUseStyleID.Swing or ItemUseStyleID.Rapier }) {
+						if (!item.IsAir && (item.useStyle == SwordGlobalItem.SwordUseStyle || item.useStyle == ItemUseStyleID.Rapier)) {
 							ParrySword = item.type;
 							break;
 						}
@@ -47,14 +49,14 @@ namespace NullandVoid.Content.Projectiles
 			
 			Main.instance.LoadItem(ParrySword);
 			Texture2D swordTexture = TextureAssets.Item[ParrySword].Value;
-			float swordAngle = player.compositeBackArm.rotation + 1.2f * parryDirection;
-			if (parryDirection == -1) {
+			float swordAngle = player.compositeBackArm.rotation + MathHelper.PiOver2 * player.direction;
+			if (player.direction == -1) {
 				swordAngle += MathHelper.Pi * 1.5f;
 			}
 
-			Vector2 armPosition = player.GetBackHandPosition(player.compositeBackArm.stretch, player.compositeBackArm.rotation) - player.Center;
+			Vector2 armPosition = player.GetBackHandPosition(player.compositeBackArm.stretch, player.compositeBackArm.rotation) - player.MountedCenter;
 			if (Main.myPlayer != Projectile.owner) {
-				armPosition -= Main.LocalPlayer.Center - player.Center;
+				armPosition -= Main.LocalPlayer.Center - player.MountedCenter;
 			}
 
 			Vector2 screenCenter = new Vector2(Main.screenWidth / 2, Main.screenHeight / 2);
@@ -71,7 +73,7 @@ namespace NullandVoid.Content.Projectiles
 			);
 
 			float t = Math.Clamp(MathF.Pow((float)(Projectile.timeLeft - 5) / 15, 3), 0, 1) - 0.15f;
-			float slashAngle = swordAngle - 0.65f * parryDirection;
+			float slashAngle = swordAngle - 0.65f * player.direction;
 			Main.EntitySpriteDraw(
 				slashTexture,
 				armPosition + screenCenter,
@@ -89,12 +91,13 @@ namespace NullandVoid.Content.Projectiles
 		public override void AI() {
 			Player player = Main.player[Projectile.owner];
 			float parryFrame = (float)(20 - Projectile.timeLeft) / 20;
-			int parryDirection = player.GetModPlayer<ParryPlayer>().ParryDirection;
-
-			player.direction = parryDirection;
+			player.ChangeDir((int)Projectile.ai[0]);
 			
-			float t = MathF.Pow(parryFrame, 3) - 0.75f * parryFrame - 1.25f * MathF.Pow(2, parryFrame * -20);
-			float armAngle = t * parryDirection * MathHelper.PiOver2 + Projectile.knockBack;
+			float t = MathF.Pow(parryFrame, 3) - 0.75f * parryFrame - 1.25f * MathF.Pow(2, parryFrame * -20) - 0.5f;
+			float armAngle = t * player.direction + Projectile.knockBack;
+			if (player.direction == -1) {
+				armAngle -= MathHelper.Pi;
+			}
 			player.SetCompositeArmBack(true, Projectile.timeLeft > 15 ? Player.CompositeArmStretchAmount.Quarter : Player.CompositeArmStretchAmount.Full, armAngle);
 		}
 	}

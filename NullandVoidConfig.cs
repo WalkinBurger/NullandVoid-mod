@@ -23,6 +23,14 @@ namespace NullandVoid
 		
 		[BackgroundColor(198, 71, 130)]
 		[SliderColor(216, 106, 159)]
+		[DefaultValue(5)]
+		[Increment(1)]
+		[Range(0, 10)]
+		[Slider()]
+		public int StyleMeterHideTime { get; set; }
+		
+		[BackgroundColor(198, 71, 130)]
+		[SliderColor(216, 106, 159)]
 		[DefaultValue(10)]
 		[Increment(1)]
 		[Range(0, 30)]
@@ -38,19 +46,8 @@ namespace NullandVoid
 		public int StyleBonusFadeTime { get; set; }
 		
 		[BackgroundColor(198, 71, 130)]
-		[SliderColor(216, 106, 159)]
-		[DefaultValue(5)]
-		[Increment(1)]
-		[Range(0, 10)]
-		[Slider()]
-		public int StyleMeterHideTime { get; set; }
-		
-		[BackgroundColor(198, 71, 130)]
-		[SliderColor(216, 106, 159)]
-		[DefaultValue(0.5f)]
-		[Increment(0.1f)]
-		[Range(0, 1f)]
-		public float StyleMeterEaseSpeed { get; set; }
+		[DefaultValue(true)]
+		public bool StyleMeterEase { get; set; }
 		
 		[Header("Parrying")]
 		
@@ -91,27 +88,6 @@ namespace NullandVoid
 		[Increment(0.05f)]
 		[Range(0f, 1f)]
 		public float StaminaSoundVolume { get; set; }
-		
-		public override void OnChanged() {
-			Player player = Main.LocalPlayer;
-			if (player == null) { 
-				return;
-			}
-
-			try {
-				player.GetModPlayer<ParryPlayer>().ChangeConfig();
-				player.GetModPlayer<StylePlayer>().ChangeConfig();
-				
-				ModContent.GetInstance<ParryBarSystem>().ChangeConfig();
-				ModContent.GetInstance<StaminaBarSystem>().ChangeConfig();
-				ModContent.GetInstance<StyleMeterSystem>().ChangeConfig();
-				
-				ModContent.GetInstance<GlowLayer>().ChangeConfig();
-			}
-			catch (Exception e) {
-				// first load?
-			}
-		}
 	}
 
 	public class NullandVoidServerConfig : ModConfig
