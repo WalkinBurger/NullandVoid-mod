@@ -17,13 +17,8 @@ namespace NullandVoid.Content.Projectiles
 			Projectile.width = Projectile.height = 128;
 		}
 		
-		public override void OnSpawn(IEntitySource source) {
-			Projectile.timeLeft = (int)Projectile.ai[0];
-			Projectile.netUpdate = true;
-		}
-
 		public override void AI() {
-			if (Projectile.timeLeft >= Projectile.ai[0]) {
+			if (Projectile.timeLeft > Projectile.ai[0]) {
 				Projectile.timeLeft = (int)Projectile.ai[0];
 			}
 			

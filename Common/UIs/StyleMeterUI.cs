@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NullandVoid.Common.Players;
+using NullandVoid.Core;
 using NullandVoid.Utils;
 using ReLogic.Content;
 using ReLogic.Graphics;
@@ -21,6 +22,7 @@ namespace NullandVoid.Common.UIs
 		private UIElement area;
 		private UIText styleRankText;
 		private UIText styleRankShadow;
+		private UIText freshnessText;
 		private int textShake;
 		private int styleVisualFill;
 		private int idleTime;
@@ -65,7 +67,14 @@ namespace NullandVoid.Common.UIs
 			styleRankShadow.Top.Set(-33, 1);
 			styleRankShadow.TextColor = new Color(0, 0, 0, 0.5f);
 			styleRankShadow.ShadowColor = new Color(0, 0, 0, 0.8f);
+
+			freshnessText = new UIText("");
+			freshnessText.Left.Set(-65, 0);
+			freshnessText.Top.Set(-30, 1);
+			freshnessText.TextColor = new Color(240, 142, 57);
+			freshnessText.ShadowColor = new Color(82, 30, 58);
 			
+			area.Append(freshnessText);
 			area.Append(styleRankShadow);
 			area.Append(styleRankText);
 			Append(area);
@@ -115,6 +124,10 @@ namespace NullandVoid.Common.UIs
 
 			int freshness = (int)(stylePlayer.WeaponFreshness * 56);
 			spriteBatch.Draw(freshnessBar, new Rectangle(areaRect.Left - 23, areaRect.Bottom - 9 - freshness, 4, freshness), new Rectangle(0, 56 - freshness, 4, freshness), Color.White);
+
+			freshnessText.SetText($"x{MathF.Round(stylePlayer.WeaponFreshness + 0.25f, 2):0.00}");
+			freshnessText.Left.Set(-78, 0);
+			freshnessText.Top.Set(-20, 1);
 			
 			styleBonusOffset = areaRect.Bottom - 65;
 			for (int i = Math.Max(0, stylePlayer.PlayerStyleBonuses.Count - ModContent.GetInstance<NullandVoidClientConfig>().MaxStyleBonuses); i < stylePlayer.PlayerStyleBonuses.Count; i++) {
@@ -158,12 +171,12 @@ namespace NullandVoid.Common.UIs
 				GameShaders.Misc["NullandVoid:StyleBonusEffect"].Shader.Parameters["uUIPosition"].SetValue(new Vector2(areaRect.Left - Main.LocalPlayer.velocity.X * 10,  areaRect.Top - 35 - Main.LocalPlayer.velocity.Y * 10));
 				GameShaders.Misc["NullandVoid:StyleBonusEffect"].Apply();
 				 
-				styleRankShadow.SetText("");
 				spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(areaRect.Left, areaRect.Bottom - 60, areaRect.Width, 4), Color.Black);
-				base.Draw(spriteBatch);
+				styleRankText.Draw(spriteBatch);
 				 
 				spriteBatch.End();
 				spriteBatch.Begin(0, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.UIScaleMatrix);
+				freshnessText.Draw(spriteBatch);
 				
 				spriteBatch.DrawString(FontAssets.DeathText.Value, styleRank.Name.Value, new Vector2(areaRect.Left - 5, areaRect.Bottom - 50), styleRank.Color, 0f, Vector2.Zero, 0.6f + styleRank.Rank * 0.03f, SpriteEffects.None, 0f);
 			}

@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using NullandVoid.Common.Globals.Items;
 using NullandVoid.Common.Systems;
 using NullandVoid.Content.Projectiles;
+using NullandVoid.Core;
 using NullandVoid.Utils;
 using Terraria;
 using Terraria.Audio;
@@ -29,9 +30,10 @@ namespace NullandVoid.Common.Players
 		public bool SwordParry;
 		public int SwordParryIFrame;
 		public float ParryAngle;
+		public int ParryDirection;
+		public int QuickProjectileBoostWindow;
 		private int parryRange;
 		private float parryScope;
-		public int ParryDirection;
 		private int parryTimer;
 		private int parryWindow;
 		private int projectileBoostCount;
@@ -99,6 +101,10 @@ namespace NullandVoid.Common.Players
 			if (SwordParryIFrame != 0) {
 				SwordParryIFrame--;
 			}
+
+			if (QuickProjectileBoostWindow != 0) {
+				QuickProjectileBoostWindow--;
+			}
 		}
 
 		public void DoParry(bool swordParry = false, int window = ParryResourceMax) {
@@ -157,7 +163,7 @@ namespace NullandVoid.Common.Players
 			}
 
 			if (Main.netMode != NetmodeID.SinglePlayer && (parryCount != 0 || !swordParry)) {
-				NetHandler.SendParryMessage(Player.whoAmI, parryCount, swordParry);
+				NullandVoidNetwork.SendParryMessage(Player.whoAmI, parryCount, swordParry);
 			}
 		}
 		
@@ -177,7 +183,9 @@ namespace NullandVoid.Common.Players
 				ParryDirection = Player.direction;
 				ParryEffects(Player.whoAmI, 1, SwordParry);
 				Player.velocity = new Vector2(Player.velocity.X * 2f, -10);
-				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
+				if (Main.netMode != NetmodeID.SinglePlayer) {
+					NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
+				}
 				return true;
 			}
 			return ParriedProjectiles.Contains(info.DamageSource.SourceProjectileLocalIndex) || ParriedNPCs.Contains(info.DamageSource.SourceNPCIndex);
@@ -188,16 +196,36 @@ namespace NullandVoid.Common.Players
 			List<int> parryingNPCs = [];
 			int modifiedRange = SwordParry? (int)(parryRange / 1.5f) : parryRange;
 			float modifiedScope = SwordParry? (parryScope / 1.5f) : parryScope;
+			int quickBoostRange = (SwordParry && QuickProjectileBoostWindow != 0)? 200 : 0;
+			StylePlayer stylePlayer = Player.GetModPlayer<StylePlayer>();
 			
 			foreach (Projectile projectile in Main.ActiveProjectiles) {
-				if (
-					(((projectile.DamageType == DamageClass.Ranged || projectile.DamageType == DamageClass.Magic) && projectile.owner == Player.whoAmI) || projectile.hostile) &&
-					!ParriedProjectiles.Contains(projectile.whoAmI) &&
-					(projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
-					projectile.Center.DistanceSQ(Player.Center) <= parryRange * parryRange &&
-					projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange, ParryAngle, modifiedScope)
-				    ) {
-					parryingProjectiles.Add(projectile.whoAmI);
+				if (ParriedProjectiles.Contains(projectile.whoAmI)) {
+					continue;
+				}
+				if ((projectile.DamageType == DamageClass.Ranged || projectile.DamageType == DamageClass.Magic) && projectile.owner == Player.whoAmI) {
+					if ((projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
+					    projectile.Center.DistanceSQ(Player.Center) <= (parryRange + quickBoostRange) * (parryRange + quickBoostRange) &&
+					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange + quickBoostRange, ParryAngle, modifiedScope)
+					    ) {
+						parryingProjectiles.Add(projectile.whoAmI);
+						if (stylePlayer.QuickDrawWindow != 0) {
+							stylePlayer.AddStyleBonus(StyleBonusesList.QuickDraw);
+							stylePlayer.QuickDrawWindow = 0;
+						}
+					}
+				}
+				else if (projectile.hostile) {
+					if ((projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
+					    projectile.Center.DistanceSQ(Player.Center) <= parryRange * parryRange &&
+					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange, ParryAngle, modifiedScope)
+					    ) {
+						parryingProjectiles.Add(projectile.whoAmI);
+						if (stylePlayer.QuickDrawWindow != 0) {
+							stylePlayer.AddStyleBonus(StyleBonusesList.QuickDraw);
+							stylePlayer.QuickDrawWindow = 0;
+						}
+					}
 				}
 			}
 			
@@ -298,7 +326,9 @@ namespace NullandVoid.Common.Players
 			}
 
 			ParryEffects(Player.whoAmI, parryCount, SwordParry);
-			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);			
+			if (Main.netMode != NetmodeID.SinglePlayer) {
+				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);			
+			}
 		}
 	}
 }

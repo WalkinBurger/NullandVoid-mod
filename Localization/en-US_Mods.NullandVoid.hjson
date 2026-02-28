@@ -105,11 +105,6 @@ Projectiles: {
 	SwordSlashProjectile.DisplayName: Sword Slash Projectile
 }
 
-# ==================== UIs ====================
-UI: {
-    FreshnessText: Freshness
-}
-
 # ==================== Styles ====================
 Style: {
 	Ranks: {

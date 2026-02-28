@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria.Localization;
 
-namespace NullandVoid.Common
+namespace NullandVoid.Core
 {
 	public class StyleBonus(string name, int points, int tier, StyleBonus? stackVarient = null, float stackPointsWeight = 1f)
 	{
@@ -11,7 +10,7 @@ namespace NullandVoid.Common
 		public readonly int Points = points;
 		public readonly int Tier = tier;
 		public readonly StyleBonus? StackVariant = stackVarient;
-		public readonly float stackPointsWeight = stackPointsWeight;
+		public readonly float StackPointsWeight = stackPointsWeight;
 	}
 
 	public readonly struct StyleTierColors()

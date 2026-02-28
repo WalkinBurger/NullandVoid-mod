@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.Xna.Framework;
 using NullandVoid.Content.Projectiles;
+using NullandVoid.Core;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameInput;
@@ -23,6 +24,8 @@ namespace NullandVoid.Common.Players
 		private int pogoCoolDown;
 		private bool pogoing;
 
+		public bool MaintainVelocity;
+
 
 		public override void ResetEffects() {
 			if (Main.mouseLeftRelease) {
@@ -40,16 +43,33 @@ namespace NullandVoid.Common.Players
 		
 		public override void ProcessTriggers(TriggersSet triggersSet) {
 			if (triggersSet.DirectionsRaw.X * Player.velocity.X > 0 && Player.velocity.Y != 0) {
-				Player.runSlowdown = 0.03f;
+				if (Main.netMode != NetmodeID.SinglePlayer && !MaintainVelocity) {
+					NullandVoidNetwork.SendMaintainVelMessage(Player.whoAmI, true);
+				}
+				MaintainVelocity = true;
 			}
-			
-			else if (Player.velocity.Y == 0) {
+			else {
+				if (Main.netMode != NetmodeID.SinglePlayer && MaintainVelocity) {
+					NullandVoidNetwork.SendMaintainVelMessage(Player.whoAmI, false);
+				}
+				MaintainVelocity = false;
+
+				if (Player.velocity.Y != 0) {
+					return;
+				}
+
 				if (Grounded && pogoing) {
 					pogoing = false;
 					Array.Clear(pogoCounts);
 					pogoCoolDown = 30;
 				}
 				Player.runSlowdown = 0.2f + Math.Max(0, Math.Abs(Player.velocity.X) - 6) * 0.2f;
+			}
+		}
+
+		public override void PostUpdateRunSpeeds() {
+			if (MaintainVelocity) {
+				Player.runSlowdown = 0.03f;
 			}
 		}
 
@@ -80,7 +100,7 @@ namespace NullandVoid.Common.Players
 					return true;
 			}
 		}
-
+		
 		public void Pogo(int boostVelocity, int count = -1) {
 			if (count == -1) {
 				count = pogoCounts[(int)PogoTypes.Sword];
@@ -93,7 +113,7 @@ namespace NullandVoid.Common.Players
 
 			
 			if (Main.netMode != NetmodeID.SinglePlayer) {
-				NetHandler.SendSoundMessage(Player.whoAmI, NetHandler.Sounds.Pogo, count);
+				NullandVoidNetwork.SendSoundMessage(Player.whoAmI, NullandVoidNetwork.Sounds.Pogo, count);
 				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			}
 			else {

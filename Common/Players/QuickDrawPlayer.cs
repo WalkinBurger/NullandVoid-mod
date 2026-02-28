@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using NullandVoid.Common.Globals.Items;
 using Terraria;
 using Terraria.GameInput;
 using Terraria.ModLoader;
@@ -29,11 +30,14 @@ namespace NullandVoid.Common.Players
 				HotbarDict[Player.selectedItem] = Player.itemTime;
 				Player.GetModPlayer<StylePlayer>().ResetFreshnessNext = true;
 				Player.GetModPlayer<StylePlayer>().QuickDrawWindow = Math.Min(10, Player.itemTime) + 10;
-				Player.GetModPlayer<SwordPlayer>().HitStyle = 0;
+				Player.GetModPlayer<UseStylePlayer>().HitStyle = 0;
 				Player.selectedItem = slot;
 				HotbarDict.TryGetValue(slot, out int cooldown);
 				Player.itemAnimation = cooldown;
 				Player.itemTime = cooldown;
+				if (Player.HeldItem.useStyle == SwordGlobalItem.SwordUseStyle) {
+					Player.GetModPlayer<ParryPlayer>().QuickProjectileBoostWindow = 30;
+				}
 			};
 
 			foreach (var key in HotbarDict.ToArray()) {

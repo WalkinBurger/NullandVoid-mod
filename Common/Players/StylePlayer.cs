@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using NullandVoid.Common.Globals.Items;
+using NullandVoid.Core;
+using NullandVoid.Utils;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -83,7 +85,7 @@ namespace NullandVoid.Common.Players
 				ResetFreshnessNext = false;
 			}
 			else if (WeaponFreshness > 0) {
-				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 2048, 0, 0.05f);
+				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 4096, 0, 0.05f);
 				WeaponFreshness = Math.Max(WeaponFreshness, 0);
 				freshnessTimer = 0;
 			}
@@ -101,11 +103,11 @@ namespace NullandVoid.Common.Players
 						continue;
 					}
 					styleBonus.Count += count;
-					CalcAddPoints(bonusType.Points, bonusStackCount, bonusType.stackPointsWeight);
+					CalcAddPoints(bonusType.Points, bonusStackCount, bonusType.StackPointsWeight);
 					return;
 				}
 				PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType, count));
-				CalcAddPoints(bonusType.Points, bonusStackCount, bonusType.stackPointsWeight);
+				CalcAddPoints(bonusType.Points, bonusStackCount, bonusType.StackPointsWeight);
 				return;
 			}
 			for (int i = 0; i < PlayerStyleBonuses.Count; i++) {
@@ -116,22 +118,22 @@ namespace NullandVoid.Common.Players
 				if (styleBonus.BonusType == bonusType) {
 					PlayerStyleBonuses.RemoveAt(i);
 					PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType.StackVariant, count + 1));
-					CalcAddPoints(bonusType.StackVariant.Points, count + 1, bonusType.StackVariant.stackPointsWeight);
+					CalcAddPoints(bonusType.StackVariant.Points, count + 1, bonusType.StackVariant.StackPointsWeight);
 					return;
 				}
 				if (styleBonus.BonusType == bonusType.StackVariant) {
 					styleBonus.Count += count;
-					CalcAddPoints(bonusType.StackVariant.Points, styleBonus.Count, bonusType.StackVariant.stackPointsWeight);
+					CalcAddPoints(bonusType.StackVariant.Points, styleBonus.Count, bonusType.StackVariant.StackPointsWeight);
 					return;
 				}
 			}
 			if (count == 1) {
 				PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType));
-				CalcAddPoints(bonusType.Points, 1, bonusType.stackPointsWeight);
+				CalcAddPoints(bonusType.Points, 1, bonusType.StackPointsWeight);
 				return;
 			}
 			PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType.StackVariant, count));
-			CalcAddPoints(bonusType.StackVariant.Points, count, bonusType.StackVariant.stackPointsWeight);
+			CalcAddPoints(bonusType.StackVariant.Points, count, bonusType.StackVariant.StackPointsWeight);
 		}
 		
 		
@@ -145,7 +147,7 @@ namespace NullandVoid.Common.Players
 			}
 			UpdateStyleBonuses();
 
-			if (freshnessTimer >= 12) {
+			if (freshnessTimer >= 15) {
 				WeaponFreshness = Math.Min(1f, WeaponFreshness + 0.01f);
 				freshnessTimer = 0;
 			}
@@ -163,7 +165,7 @@ namespace NullandVoid.Common.Players
 		}
 
 		public override void OnHurt(Player.HurtInfo info) {
-			StylePoints -= info.Damage / 2;
+			StylePoints = Math.Min(0, StylePoints - info.Damage / 2);
 			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
 				ScorePoints -= info.Damage / 2;
 			}
@@ -187,7 +189,7 @@ namespace NullandVoid.Common.Players
 					}
 				}
 
-				if (Main.netMode == NetmodeID.MultiplayerClient && Main.CurrentFrameFlags.ActivePlayersCount > 1) {
+				if (Main.netMode != NetmodeID.SinglePlayer && Main.CurrentFrameFlags.ActivePlayersCount > 1) {
 					bool selfInteraction = false;
 					for (int i = 0; i < Main.CurrentFrameFlags.ActivePlayersCount; i++) {
 						if (!target.playerInteraction[i]) {

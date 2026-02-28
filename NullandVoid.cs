@@ -2,6 +2,7 @@ using System.IO;
 using Microsoft.Xna.Framework.Graphics;
 using NullandVoid.Common;
 using NullandVoid.Common.Players;
+using NullandVoid.Core;
 using ReLogic.Content;
 using Terraria;
 using Terraria.Graphics.Shaders;
@@ -22,7 +23,7 @@ namespace NullandVoid
 		}
 		
 		public override void HandlePacket(BinaryReader reader, int whoAmI) {
-			NetHandler.HandlePacket(reader, whoAmI);
+			NullandVoidNetwork.HandlePacket(reader, whoAmI);
 		}
 	}
 }

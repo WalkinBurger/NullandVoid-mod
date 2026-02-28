@@ -48,7 +48,7 @@ namespace NullandVoid.Common
 				new Color(t + 0.05f, t + 0.05f, t, 0f),
 				player.compositeBackArm.rotation,
 				new Vector2(glowStar.Width / 2, glowStar.Height / 2),
-				0.85f + 0.15f * (parryPlayer.ParriedNPCs.Count + parryPlayer.ParriedProjectiles.Count),
+				0.9f + 0.05f * (parryPlayer.ParriedNPCs.Count + parryPlayer.ParriedProjectiles.Count),
 				SpriteEffects.None, 0)
 			);
 		}

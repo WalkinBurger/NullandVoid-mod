@@ -3,7 +3,7 @@
     "Terraria": {
       "commandName": "Executable",
       "executablePath": "/usr/share/dotnet/dotnet",
-      "commandLineArgs": "$(tMLPath) -skipselect modding:modding world",
+      "commandLineArgs": "$(tMLPath) -skipselect modding:modding world -modpack modding",
       "workingDirectory": "$(tMLSteamPath)"
     },
     "TerrariaServer": {

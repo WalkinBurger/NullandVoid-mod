@@ -76,9 +76,12 @@ namespace NullandVoid.Common.UIs
 				parryRatio == 1f? new Rectangle(0, (barHeight + 2) * (parryBarFrame - 1), barWidth, barHeight) : new Rectangle(0, barOffset, barWidth, barHeight - barOffset),
 				barColor
 			);
-			
+
 			if (parryPlayer.SwordParry) {
-				spriteBatch.Draw(barAuto, new Vector2(barFrame.Left, barFrame.Top), new Color(1f,1f,1f, 0.8f));
+				spriteBatch.Draw(barAuto, new Vector2(barFrame.Left, barFrame.Top), new Color(1f, 1f, 1f, 0.8f));
+				if (barEmptyUI.IsMouseHovering) {
+					Main.hoverItemName = "Sword Parrying";
+				}
 			}
 		}
 	}

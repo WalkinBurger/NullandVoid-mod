@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using NullandVoid.Common.Players;
 using NullandVoid.Content.Projectiles;
+using NullandVoid.Core;
 using NullandVoid.Utils;
 using Terraria;
 using Terraria.ID;
@@ -25,69 +26,50 @@ namespace NullandVoid.Common.Globals.Items
 			item.useStyle = SwordUseStyle;
 		}
 
+
 		public override void UseStyle(Item item, Player player, Rectangle heldItemFrame) {
-			SwordPlayer swordPlayer = player.GetModPlayer<SwordPlayer>();
+			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
 
-			if (player.ItemAnimationJustStarted) {
-				swordPlayer.HitResetTimer = player.itemAnimationMax * 2;
-				swordPlayer.HitStyle = (swordPlayer.HitStyle + 1) % 3;
-				swordPlayer.HitDirection = (int)MathF.Round(Math.Clamp(Main.MouseScreen.X - Main.screenWidth / 2, -1, 1));
-				if (swordPlayer.HitDirection == 0) {
-					swordPlayer.HitDirection = player.direction;
-				}
-				float hitAngle = MathF.Atan((Main.MouseScreen.Y - Main.screenHeight / 2) / (Math.Abs(Main.MouseScreen.X - Main.screenWidth / 2)) * swordPlayer.HitDirection) -  MathHelper.PiOver2 * swordPlayer.HitDirection;
-				float offsetAngle = 1.4f * swordPlayer.HitDirection;
-				switch (swordPlayer.HitStyle) {
-					case 0:
-						player.itemAnimationMax = (int)(player.itemAnimationMax * 1.5f);
-						player.itemAnimation = player.itemAnimationMax;
-						swordPlayer.HitAngleRange = [hitAngle - offsetAngle, hitAngle + offsetAngle * 1.25f];
-						break;
-					case 1:
-						swordPlayer.HitAngleRange = [hitAngle - offsetAngle, hitAngle + offsetAngle];
-						break;
-					case 2:
-						swordPlayer.HitAngleRange = [hitAngle + offsetAngle, hitAngle - offsetAngle];
-						break;
-				}
-				swordPlayer.HitAngleRange[0] = swordPlayer.HitDirection == 1 ? Math.Clamp(swordPlayer.HitAngleRange[0], -4, 1) : Math.Clamp(swordPlayer.HitAngleRange[0], -1, 4);
-				swordPlayer.HitAngleRange[1] = swordPlayer.HitDirection == 1 ? Math.Clamp(swordPlayer.HitAngleRange[1], -4, 1) : Math.Clamp(swordPlayer.HitAngleRange[1], -1, 4);
+			if (player.ItemAnimationJustStarted && player.whoAmI == Main.myPlayer) {
+				useStylePlayer.HitResetTimer = player.itemAnimationMax * 2;
+				int style = (useStylePlayer.HitStyle + 1) % 3;
+				float hitAngle = NullandVoidUtils.MouseAngle(Main.MouseScreen, Main.ScreenSize, true);
 				
-				if (player.whoAmI != Main.myPlayer) {
-					return;
-				}
-
 				Projectile.NewProjectile(player.GetSource_FromThis(), player.MountedCenter, Vector2.Zero, ModContent.ProjectileType<SwordSlashProjectile>(), 0, 0, Main.myPlayer, player.itemAnimationMax);
 				player.GetModPlayer<ParryPlayer>().DoParry(true, 6);
 					
 				MovementMiscPlayer movementMiscPlayer = player.GetModPlayer<MovementMiscPlayer>();
+				useStylePlayer.SetHit(player.whoAmI, hitAngle, style);
 				if (movementMiscPlayer.CanPogo(PogoTypes.Sword)) {
-					movementMiscPlayer.Pogo(swordPlayer.HitStyle == 0? 16 : 12);
+					movementMiscPlayer.Pogo(useStylePlayer.HitStyle == 0? 16 : 12);
+				}
+				if (Main.netMode != NetmodeID.SinglePlayer) {
+					NullandVoidNetwork.SendSwordMessage(player.whoAmI, hitAngle, style);
 				}
 			}
 
 			
-			player.ChangeDir(swordPlayer.HitDirection);
+			player.ChangeDir(useStylePlayer.HitDirection);
 			player.itemTime = player.itemAnimation;
 
 			float hitProgress = 1 - ((float)player.itemAnimation / player.itemAnimationMax);
-			float swingAngle = MathHelper.Lerp(swordPlayer.HitAngleRange[0], swordPlayer.HitAngleRange[1], NullandVoidUtils.OutElastic(hitProgress));
+			float swingAngle = MathHelper.Lerp(useStylePlayer.HitAngleRange[0], useStylePlayer.HitAngleRange[1], NullandVoidUtils.OutElastic(hitProgress));
 			player.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, swingAngle);
 			player.itemLocation = player.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, player.compositeFrontArm.rotation);
-			player.itemRotation = swingAngle + 2f * swordPlayer.HitDirection;
+			player.itemRotation = swingAngle + 2f * useStylePlayer.HitDirection;
 			player.FlipItemLocationAndRotationForGravity();
 		}
 
 		public override void ModifyWeaponDamage(Item item, Player player, ref StatModifier damage) {
-			SwordPlayer swordPlayer = player.GetModPlayer<SwordPlayer>();
-			if (swordPlayer.HitStyle == 0 && swordPlayer.HitResetTimer != 0) {
+			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
+			if (useStylePlayer.HitStyle == 0 && useStylePlayer.HitResetTimer != 0) {
 				damage.Multiplicative = 1.5f;
 			}
 		}
 
 		public override void ModifyWeaponKnockback(Item item, Player player, ref StatModifier knockback) {
-			SwordPlayer swordPlayer = player.GetModPlayer<SwordPlayer>();
-			if (swordPlayer.HitStyle == 0 && swordPlayer.HitResetTimer != 0) {
+			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
+			if (useStylePlayer.HitStyle == 0 && useStylePlayer.HitResetTimer != 0) {
 				knockback.Multiplicative = 1.5f;
 			}
 		}
@@ -97,11 +79,11 @@ namespace NullandVoid.Common.Globals.Items
 		}
 
 		public override void UseItemHitbox(Item item, Player player, ref Rectangle hitbox, ref bool noHitbox) {
-			SwordPlayer swordPlayer = player.GetModPlayer<SwordPlayer>();
+			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
 			
 			Vector2 handPostion = player.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, player.compositeFrontArm.rotation);
 			float x = NullandVoidUtils.OutElastic(1 - ((float)player.itemAnimation / player.itemAnimationMax));
-			float size = MathF.Sqrt(hitbox.Width * hitbox.Width + hitbox.Height * hitbox.Height) * (MathF.Sin(x * MathHelper.Pi) * 1.3f + (float)(((swordPlayer.HitStyle + 2) % 3) + 1) / 4);
+			float size = MathF.Sqrt(hitbox.Width * hitbox.Width + hitbox.Height * hitbox.Height) * (MathF.Sin(x * MathHelper.Pi) * 1.3f + (float)(((useStylePlayer.HitStyle + 2) % 3) + 1) / 4);
 			Vector2 tipPosition = handPostion - new Vector2(size * MathF.Sin(player.compositeFrontArm.rotation), size * -MathF.Cos(player.compositeFrontArm.rotation));
 			hitbox = Terraria.Utils.CornerRectangle(handPostion, tipPosition);
 			
