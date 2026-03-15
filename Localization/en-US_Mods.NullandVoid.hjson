@@ -36,6 +36,7 @@ Configs: {
 			Parrying: Parrying
 			StyleMeter: Style Meter
 			Stamina: Stamina
+			Blood: Blood Header
 		}
 
 		ParryFlashIntensity: {
@@ -92,6 +93,26 @@ Configs: {
 			Label: Show style meter UI
 			Tooltip: ""
 		}
+
+		ShowBloodSpill: {
+			Label: Show Blood Spill
+			Tooltip: Custom blood effects when damaging enemies
+		}
+
+		BloodAmount: {
+			Label: Blood Amount
+			Tooltip: ""
+		}
+
+		ShowBloodTrail: {
+			Label: Show Blood Trail
+			Tooltip: Blood particles have trails
+		}
+
+		BloodSize: {
+			Label: Blood Size
+			Tooltip: ""
+		}
 	}
 
 	NullandVoidServerConfig.DisplayName: Server Config
@@ -103,6 +124,7 @@ Projectiles: {
 	SlashProjectile.DisplayName: Slash Projectile
 	GlowStarProjectile.DisplayName: Glow Star Projectile
 	SwordSlashProjectile.DisplayName: Sword Slash Projectile
+	ParryExplosion.DisplayName: Parry Explosion
 }
 
 # ==================== Styles ====================
@@ -118,17 +140,19 @@ Style: {
 	}
 
 	Bonuses: {
-		Assist: + ASSIST
-		Kill: + KILL
-		Lunge: + LUNGE
-		Pogo: + POGO
-		Overkill: + OVERKILL
-		QuickDraw: + QUICK DRAW
-		Airshot: + AIRSHOT
-		ProjectileBoost: + PROJECTILE BOOST
-		Uppercut: + UPPERCUT
-		LongLunge: + LONG LUNGE
-		MultiKill: + MULTIKILL
-		Parry: + PARRY
+		LameHealing: LAME HEALING
+		Ouchie: OUCHIE
+		Kill: KILL
+		Lunge: LUNGE
+		Pogo: POGO
+		Overkill: OVERKILL
+		QuickDraw: QUICK DRAW
+		Airshot: AIRSHOT
+		FriendlyFire: FRIENDLY FIRE
+		ProjectileBoost: PROJECTILE BOOST
+		Uppercut: UPPERCUT
+		LongLunge: LONG LUNGE
+		MultiKill: MULTIKILL
+		Parry: PARRY
 	}
 }

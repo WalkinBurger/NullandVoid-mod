@@ -11,23 +11,18 @@ namespace NullandVoid.Common.UIs
 {
 	internal class StaminaBarUI : UIState
 	{
-		private UIElement area;
-		private static Texture2D barEmpty;
-		private static Texture2D barFull;
-		private static int barWidth;
-		private static int barHeight;
+		private static Asset<Texture2D> barEmpty;
+		private static Asset<Texture2D> barFull;
 		private Rectangle areaRect;
+		private UIElement area;
 		
 		public override void OnInitialize() {
 			area = new UIElement();
 			area.Left.Set(-450, 1);
 			area.Top.Set(15, 0);
 
-			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar", AssetRequestMode.ImmediateLoad).Value;
-			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarFull", AssetRequestMode.ImmediateLoad).Value;
-			
-			barWidth = barEmpty.Width;
-			barHeight = barEmpty.Height;
+			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar", AssetRequestMode.ImmediateLoad);
+			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarFull", AssetRequestMode.ImmediateLoad);
 			
 			Append(area);
 		}
@@ -39,26 +34,26 @@ namespace NullandVoid.Common.UIs
 			
 			base.Draw(spriteBatch);
 			
-			StaminaPlayer staminaPlayer = Main.LocalPlayer.GetModPlayer<StaminaPlayer>();
 			areaRect = area.GetInnerDimensions().ToRectangle();
+			StaminaPlayer staminaPlayer = Main.LocalPlayer.GetModPlayer<StaminaPlayer>();
 			float staminaRatio = (float)staminaPlayer.StaminaResource / 20;
 			int staminaBars = staminaPlayer.StaminaMax / 20;
 			for (int i = 0; i < staminaBars; i++) {
-				Vector2 barOrigin = new Vector2(areaRect.Left - i * 50, areaRect.Top);
-				spriteBatch.Draw(barEmpty, barOrigin, Color.White);
+				Vector2 barOrigin = new(areaRect.Left - i * 50, areaRect.Top);
+				spriteBatch.Draw(barEmpty.Value, barOrigin, Color.White);
 
 				if (staminaRatio <= i) {
 					continue;
 				}
 				
-				int barOffset = (int)(barWidth * (1 - (staminaRatio - i)));
+				int barOffset = (int)(barEmpty.Width() * (1 - (staminaRatio - i)));
 				Color barColor = Color.White;
 				barColor.A = barColor.R = barColor.G = barColor.B = staminaRatio - i >= 1f ? (byte)255 : (byte)128;
 
 				spriteBatch.Draw(
-					barFull,
+					barFull.Value,
 					new Vector2(barOrigin.X + barOffset, barOrigin.Y),
-					new Rectangle(barOffset, 0, barWidth - barOffset, barHeight),
+					new Rectangle(barOffset, 0, barEmpty.Width() - barOffset, barEmpty.Height()),
 					barColor
 				);
 			}
@@ -77,6 +72,11 @@ namespace NullandVoid.Common.UIs
 			StaminaBarUserInterface.SetState(StaminaBarUI);
 		}
 
+		public override void Unload() {
+			StaminaBarUI = null;
+			StaminaBarUserInterface = null;
+		}
+		
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
 			int mouseTextIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Resource Bars"));
 			if (mouseTextIndex != -1) {

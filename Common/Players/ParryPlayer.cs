@@ -32,6 +32,7 @@ namespace NullandVoid.Common.Players
 		public float ParryAngle;
 		public int ParryDirection;
 		public int QuickProjectileBoostWindow;
+		public int ParryExplosionRange;
 		private int parryRange;
 		private float parryScope;
 		private int parryTimer;
@@ -45,6 +46,7 @@ namespace NullandVoid.Common.Players
 			ParryUsage = 50;
 			parryRange = 50;
 			parryScope = MathHelper.PiOver2;
+			ParryExplosionRange = 150;
 		}
 
 		public override void Load() {
@@ -72,7 +74,7 @@ namespace NullandVoid.Common.Players
 				ParryResource += ParryRegenRate;
 				if (ParryResource >= ParryResourceMax) {
 					ParryResource = Math.Clamp(ParryResource, 0, ParryResourceMax);
-					SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f});
+					SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f, MaxInstances = 8 });
 				}
 				parryTimer = 0;
 			}
@@ -138,10 +140,10 @@ namespace NullandVoid.Common.Players
 			Player player = Main.player[whoAmI];
 
 			if (parryCount == 0 && !swordParry) {
-				SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing with {Volume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, Pitch = 0.2f}, player.Center);
+				SoundEngine.PlaySound(SoundID.DD2_MonkStaffSwing with { Volume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, Pitch = 0.2f }, player.Center);
 			}
 			else if (parryCount != 0) {
-				SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryHit") with {Volume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.2f, Pitch = (parryCount - 1) * 0.1f}, player.Center);
+				SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryHit") with { Volume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.2f, Pitch = (parryCount - 1) * 0.1f, MaxInstances = 8 }, player.Center);
 				
 				for (int i = 0; i < 8; i++) {
 					Dust dust = Dust.NewDustDirect(player.Center, 10, 10, DustID.Firework_Yellow, Scale: 0.6f);
@@ -183,9 +185,7 @@ namespace NullandVoid.Common.Players
 				ParryDirection = Player.direction;
 				ParryEffects(Player.whoAmI, 1, SwordParry);
 				Player.velocity = new Vector2(Player.velocity.X * 2f, -10);
-				if (Main.netMode != NetmodeID.SinglePlayer) {
-					NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
-				}
+				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
 				return true;
 			}
 			return ParriedProjectiles.Contains(info.DamageSource.SourceProjectileLocalIndex) || ParriedNPCs.Contains(info.DamageSource.SourceNPCIndex);
@@ -204,7 +204,8 @@ namespace NullandVoid.Common.Players
 					continue;
 				}
 				if ((projectile.DamageType == DamageClass.Ranged || projectile.DamageType == DamageClass.Magic) && projectile.owner == Player.whoAmI) {
-					if ((projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
+					if (projectile.type != ModContent.ProjectileType<ParryExplosion>() && 
+						(projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
 					    projectile.Center.DistanceSQ(Player.Center) <= (parryRange + quickBoostRange) * (parryRange + quickBoostRange) &&
 					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange + quickBoostRange, ParryAngle, modifiedScope)
 					    ) {
@@ -255,6 +256,7 @@ namespace NullandVoid.Common.Players
 			foreach (int i in parryingProjectiles) {
 				ParriedProjectiles.Add(i);
 				Projectile projectile =  Main.projectile[i];
+				bool isBoost = false;
 				if (projectile.hostile) {
 					projectile.hostile = false;
 					projectile.friendly = true;
@@ -264,15 +266,24 @@ namespace NullandVoid.Common.Players
 				else {
 					projectileBoostCount++;
 					tempProjectileBoostCount++;
+					isBoost = true;
 				}
 
 				projectile.localNPCHitCooldown = 20;
 				projectile.usesLocalNPCImmunity = true;
-				projectile.penetrate = projectile.penetrate == -1? -1 : projectile.penetrate + 3;
-				projectile.damage *= 2;
 				projectile.knockBack *= 1.5f;
-				projectile.velocity *= Math.Clamp((16 / projectile.velocity.Length()), 1f, 1.75f);
+				if (Math.Abs(projectile.Center.X - Player.Center.X / 8) < 3) {
+					projectile.velocity *= Math.Clamp((16 / projectile.velocity.Length()), 1f, 1.75f);
+				}
+				else {
+					projectile.velocity.X += Math.Clamp((projectile.Center.X - Player.Center.X) / 8, -3, 3);
+				}
+
+				if (Math.Abs(projectile.velocity.Length()) < Math.Abs(projectile.Center.Y - Player.Center.Y - projectile.velocity.Y)) {
+					projectile.velocity.Y = MathHelper.Clamp(projectile.Center.Y - Player.Center.Y, -5, 5);
+				}
 				projectile.netUpdate = true;
+				Projectile.NewProjectile(projectile.GetSource_FromThis(), projectile.position, Vector2.Zero, ModContent.ProjectileType<ParryExplosion>(), projectile.damage, projectile.knockBack, 0, projectile.identity,  ParryExplosionRange, isBoost? -Player.whoAmI : Player.whoAmI);
 
 				knockbackVelocity = projectile.velocity.SafeNormalize(Vector2.Zero);
 				Player.velocity.X -= knockbackVelocity.X * 5 / ParriedProjectiles.Count;
@@ -285,7 +296,7 @@ namespace NullandVoid.Common.Players
 				NPC npc = Main.npc[i];
 				Vector2 approachVelocity = Player.velocity - npc.velocity;
 				npc.PlayerInteraction(Player.whoAmI);
-				npc.SimpleStrikeNPC(SwordParry? npc.damage : npc.damage * 2, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5, DamageClass.Melee);
+				npc.SimpleStrikeNPC(SwordParry? npc.damage / 2 : npc.damage, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5, DamageClass.Melee);
 				if (!npc.active) {
 					Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonusesList.Kill);
 				}
@@ -306,7 +317,7 @@ namespace NullandVoid.Common.Players
 			ParryFrame = 20;
 			int parryCount = ParriedProjectiles.Count + ParriedNPCs.Count;
 			
-			int parryHeal = parriedDamage / parryCount;
+			int parryHeal = (int)((parriedDamage / parryCount) * (0.5f + ((float)Player.GetModPlayer<StylePlayer>().PlayerStyleRank.Rank / 8)));
 			if (SwordParry) {
 				parryHeal /= 2;
 			}
@@ -326,9 +337,7 @@ namespace NullandVoid.Common.Players
 			}
 
 			ParryEffects(Player.whoAmI, parryCount, SwordParry);
-			if (Main.netMode != NetmodeID.SinglePlayer) {
-				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);			
-			}
+			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);			
 		}
 	}
 }

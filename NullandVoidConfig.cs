@@ -17,60 +17,45 @@ namespace NullandVoid
 
 		[Header("StyleMeter")]
 		
-		[BackgroundColor(157, 58, 120)]
 		[DefaultValue(true)]
 		public bool ShowStyleMeterUI { get; set; }
 		
-		[BackgroundColor(198, 71, 130)]
-		[SliderColor(216, 106, 159)]
 		[DefaultValue(5)]
 		[Increment(1)]
 		[Range(0, 10)]
 		[Slider()]
 		public int StyleMeterHideTime { get; set; }
 		
-		[BackgroundColor(198, 71, 130)]
-		[SliderColor(216, 106, 159)]
 		[DefaultValue(10)]
 		[Increment(1)]
 		[Range(0, 30)]
 		[Slider()]
 		public int MaxStyleBonuses { get; set; }
 		
-		[BackgroundColor(198, 71, 130)]
-		[SliderColor(216, 106, 159)]
 		[DefaultValue(5)]
 		[Increment(1)]
 		[Range(1, 10)]
 		[Slider()]
 		public int StyleBonusFadeTime { get; set; }
 		
-		[BackgroundColor(198, 71, 130)]
 		[DefaultValue(true)]
 		public bool StyleMeterEase { get; set; }
 		
 		[Header("Parrying")]
 		
-		[BackgroundColor(187, 136, 90)]
 		[DefaultValue(true)]
 		public bool ShowParryUI { get; set; }
 
-		[BackgroundColor(223, 187, 137)]
-		[SliderColor(240, 224, 184)]
 		[DefaultValue(0.75f)]
 		[Increment(0.05f)]
 		[Range(0f, 1f)]
 		public float ParryFlashIntensity { get; set; }
 
-		[BackgroundColor(223, 187, 137)]
-		[SliderColor(240, 224, 184)]
 		[DefaultValue(0.75f)]
 		[Increment(0.05f)]
 		[Range(0f, 1f)]
 		public float ParryShakeIntensity { get; set; }
 
-		[BackgroundColor(223, 187, 137)]
-		[SliderColor(240, 224, 184)]
 		[DefaultValue(0.75f)]
 		[Increment(0.05f)]
 		[Range(0f, 1f)]
@@ -78,16 +63,31 @@ namespace NullandVoid
 		
 		[Header("Stamina")]
 		
-		[BackgroundColor(44, 159, 76)]
 		[DefaultValue(true)]
 		public bool ShowStaminaUI { get; set; }
 		
-		[BackgroundColor(104, 209, 80)]
-		[SliderColor(197, 245, 125)]
 		[DefaultValue(0.75f)]
 		[Increment(0.05f)]
 		[Range(0f, 1f)]
 		public float StaminaSoundVolume { get; set; }
+		
+		[Header("Blood")]
+		
+		[DefaultValue(true)]
+		public bool ShowBloodSpill { get; set; }
+		
+		[DefaultValue(true)]
+		public bool ShowBloodTrail { get; set; }
+		
+		[DefaultValue(4)]
+		[Increment(1)]
+		[Range(1, 10)]
+		public int BloodAmount { get; set; }
+		
+		[DefaultValue(0.65f)]
+		[Increment(0.05f)]
+		[Range(0.3f, 2f)]
+		public float BloodSize { get; set; }
 	}
 
 	public class NullandVoidServerConfig : ModConfig

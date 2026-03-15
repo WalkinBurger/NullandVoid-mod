@@ -1,11 +1,9 @@
 using System;
-using System.IO;
 using Microsoft.Xna.Framework;
 using NullandVoid.Content.Projectiles;
 using NullandVoid.Core;
 using Terraria;
 using Terraria.Audio;
-using Terraria.GameInput;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -24,8 +22,6 @@ namespace NullandVoid.Common.Players
 		private int pogoCoolDown;
 		private bool pogoing;
 
-		public bool MaintainVelocity;
-
 
 		public override void ResetEffects() {
 			if (Main.mouseLeftRelease) {
@@ -34,43 +30,34 @@ namespace NullandVoid.Common.Players
 		}
 		
 		public override void PostUpdateMiscEffects() {
-			if (pogoCoolDown != 0) {
+			Grounded = Player.velocity.Y == 0f;
+			
+			if (Grounded && pogoing) {
+				pogoing = false;
+				Array.Clear(pogoCounts);
+				pogoCoolDown = 30;
+			} 
+			else if (pogoCoolDown != 0) {
 				pogoCoolDown--;
 			}
-
-			Grounded = ((Player.velocity.Y == 0f || Player.sliding) && Player.releaseJump) || (Player.autoJump && Player.justJumped);
 		}
 		
-		public override void ProcessTriggers(TriggersSet triggersSet) {
-			if (triggersSet.DirectionsRaw.X * Player.velocity.X > 0 && Player.velocity.Y != 0) {
-				if (Main.netMode != NetmodeID.SinglePlayer && !MaintainVelocity) {
-					NullandVoidNetwork.SendMaintainVelMessage(Player.whoAmI, true);
-				}
-				MaintainVelocity = true;
-			}
-			else {
-				if (Main.netMode != NetmodeID.SinglePlayer && MaintainVelocity) {
-					NullandVoidNetwork.SendMaintainVelMessage(Player.whoAmI, false);
-				}
-				MaintainVelocity = false;
-
-				if (Player.velocity.Y != 0) {
-					return;
-				}
-
-				if (Grounded && pogoing) {
-					pogoing = false;
-					Array.Clear(pogoCounts);
-					pogoCoolDown = 30;
-				}
-				Player.runSlowdown = 0.2f + Math.Max(0, Math.Abs(Player.velocity.X) - 6) * 0.2f;
-			}
+		public override void Load() {
+			On_Player.HorizontalMovement += On_PlayerOnHorizontalMovement;
 		}
 
-		public override void PostUpdateRunSpeeds() {
-			if (MaintainVelocity) {
-				Player.runSlowdown = 0.03f;
+		public override void Unload() {
+			On_Player.HorizontalMovement -= On_PlayerOnHorizontalMovement;
+		}
+
+		private static void On_PlayerOnHorizontalMovement(On_Player.orig_HorizontalMovement orig, Player self) {
+			if (((self.controlLeft && self.velocity.X < 0) || (self.controlRight && self.velocity.X > 0)) && !self.GetModPlayer<MovementMiscPlayer>().Grounded) {
+				self.runSlowdown = 0;
 			}
+			else if (self.GetModPlayer<MovementMiscPlayer>().Grounded && Math.Abs(self.velocity.X) > self.accRunSpeed + 1) {
+				self.runSlowdown = Math.Abs(self.velocity.X / 6);
+			}
+			orig(self);
 		}
 
 
@@ -105,7 +92,7 @@ namespace NullandVoid.Common.Players
 			if (count == -1) {
 				count = pogoCounts[(int)PogoTypes.Sword];
 			}
-			Projectile.NewProjectile(Player.GetSource_FromThis(), Player.Bottom, Vector2.Zero, ModContent.ProjectileType<GlowStarProjectile>(), 0, 0, Main.myPlayer, 15f);
+			Projectile.NewProjectile(Player.GetSource_FromThis(), Player.Bottom, Vector2.Zero, ModContent.ProjectileType<GlowStarProjectile>(), 0, 0, Main.myPlayer, 10f);
 			Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonusesList.Pogo);
 			pogoing = true;
 			Player.velocity.Y = -boostVelocity;

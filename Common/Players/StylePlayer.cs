@@ -31,7 +31,7 @@ namespace NullandVoid.Common.Players
 
 		public int ScorePoints;
 
-		public float WeaponFreshness;
+		public float WeaponFreshness = 1f;
 		public bool ResetFreshnessNext;
 		public float FreshnessDecayRate;
 		private int freshnessTimer;
@@ -54,7 +54,7 @@ namespace NullandVoid.Common.Players
 
 
 		public void UpdateStyleRank() {
-			if (StylePoints < PlayerStyleRank.LowerBound) {
+			if (StylePoints < PlayerStyleRank.LowerBound && PlayerStyleRank != StyleRanksList.Dull) {
 				PlayerStyleRank = StyleRanksList.List[PlayerStyleRank.Rank - 1];
 				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
 				styleLoseRate = PlayerStyleRank.LoseRate;
@@ -85,7 +85,7 @@ namespace NullandVoid.Common.Players
 				ResetFreshnessNext = false;
 			}
 			else if (WeaponFreshness > 0) {
-				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 4096, 0, 0.05f);
+				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 2048, 0, 0.1f);
 				WeaponFreshness = Math.Max(WeaponFreshness, 0);
 				freshnessTimer = 0;
 			}
@@ -93,8 +93,27 @@ namespace NullandVoid.Common.Players
 				ScorePoints += calcPoints;
 			}
 		}
+
+		public void CalcMinusPoints(int points, int count) {
+			StylePoints = Math.Max(0, StylePoints - points * count);
+			UpdateStyleRank();
+			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
+				ScorePoints -= points * count;
+			}
+		}
 		
 		public void AddStyleBonus(StyleBonus bonusType, int count = 1) {
+			if (bonusType.Tier == -1) {
+				if (bonusType.Points != 0) {
+					CalcMinusPoints(bonusType.Points, count);
+				}
+				foreach (PlayerStyleBonus styleBonus in PlayerStyleBonuses.Where(styleBonus => styleBonus.BonusType == bonusType)) {
+					styleBonus.Count += count;
+					return;
+				}
+				PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType, count));
+				return;
+			}
 			if (bonusType.StackVariant == null) {
 				int bonusStackCount = count;
 				foreach (PlayerStyleBonus styleBonus in PlayerStyleBonuses.Where(styleBonus => styleBonus.BonusType == bonusType)) {
@@ -136,8 +155,14 @@ namespace NullandVoid.Common.Players
 			CalcAddPoints(bonusType.StackVariant.Points, count, bonusType.StackVariant.StackPointsWeight);
 		}
 		
-		
+
+		public override void UpdateLifeRegen() {
+			Player.lifeRegen += PlayerStyleRank.Rank * 2;
+		}
+
+
 		public override void PostUpdateMiscEffects() {
+			Player.GetDamage(DamageClass.Generic) += (float)(PlayerStyleRank.Rank - 2) / 8;
 			freshnessTimer++;
 			styleTimer++;
 			if (styleTimer >= styleLoseThreshold && StylePoints != 0) {
@@ -151,13 +176,6 @@ namespace NullandVoid.Common.Players
 				WeaponFreshness = Math.Min(1f, WeaponFreshness + 0.01f);
 				freshnessTimer = 0;
 			}
-			/*
-			List<string> bonuses = [];
-			foreach (PlayerStyleBonus styleBonus in PlayerStyleBonuses.ToArray()) {
-				bonuses.Add(string.Join(" x ", (styleBonus.BonusType.Name, styleBonus.Count, styleBonus.TimeAlive)));
-			}
-			Main.NewText((StylePoints, styleLoseThreshold, styleLoseRate, PlayerStyleRank.Name, string.Join(" | ",  bonuses)));
-			*/
 
 			if (QuickDrawWindow != 0) {
 				QuickDrawWindow--;
@@ -165,10 +183,8 @@ namespace NullandVoid.Common.Players
 		}
 
 		public override void OnHurt(Player.HurtInfo info) {
-			StylePoints = Math.Min(0, StylePoints - info.Damage / 2);
-			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
-				ScorePoints -= info.Damage / 2;
-			}
+			AddStyleBonus(StyleBonusesList.Ouchie);
+			CalcMinusPoints(info.Damage / 2, 1);
 		}
 
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
@@ -189,28 +205,15 @@ namespace NullandVoid.Common.Players
 					}
 				}
 
-				if (Main.netMode != NetmodeID.SinglePlayer && Main.CurrentFrameFlags.ActivePlayersCount > 1) {
-					bool selfInteraction = false;
-					for (int i = 0; i < Main.CurrentFrameFlags.ActivePlayersCount; i++) {
-						if (!target.playerInteraction[i]) {
-							continue;
-						}
-						if (selfInteraction) {
-							AddStyleBonus(StyleBonusesList.Assist);
-							break;
-						}
-						selfInteraction = true;
-					}
-				}
-
 				if (damageDone > target.lifeMax * 3) {
 					AddStyleBonus(StyleBonusesList.Overkill);
 				}
 				AddStyleBonus(StyleBonusesList.Kill);
 			}
+			
 			if (Lunging && hit.DamageType == DamageClass.Melee) {
 				Lunging = false;
-				SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundMiss with { Volume = 0.75f, Pitch = 0.5f }, Player.Center);
+				SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundMiss with { Volume = 0.75f, Pitch = 0.5f, MaxInstances = 8 }, Player.Center);
 				Player.GiveImmuneTimeForCollisionAttack(30);
 				AddStyleBonus(Player.GetModPlayer<StaminaPlayer>().DashJump ? StyleBonusesList.LongLunge : StyleBonusesList.Lunge);
 			}

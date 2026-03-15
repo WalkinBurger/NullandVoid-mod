@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Terraria;
+using Terraria.ID;
 using Terraria.Localization;
 
 namespace NullandVoid.Core
@@ -16,6 +18,7 @@ namespace NullandVoid.Core
 	public readonly struct StyleTierColors()
 	{
 		public static readonly Dictionary<int, Color> Colors = new() {
+			{ -1,  new Color(123, 37, 54) },
 			{ 0,  new Color(218, 225, 229) },
 			{ 1,  new Color(130, 216, 233) },
 			{ 2,  new Color(85, 125, 211) },
@@ -24,8 +27,9 @@ namespace NullandVoid.Core
 	
 	internal static class StyleBonusesList
 	{
+		internal static readonly StyleBonus LameHealing = new ("LameHealing", 100, -1);
+		internal static readonly StyleBonus Ouchie = new ("Ouchie", 0, -1);
 		
-		internal static readonly StyleBonus Assist = new("Assist", 10, 0);
 		internal static readonly StyleBonus Kill = new("Kill", 30, 0, MultiKill);
 		internal static readonly StyleBonus Lunge = new ("Lunge", 25, 0, null, 0.75f);
 		internal static readonly StyleBonus Overkill = new ("Overkill", 10, 0, null, 0.5f);
@@ -33,6 +37,7 @@ namespace NullandVoid.Core
 		internal static readonly StyleBonus QuickDraw = new ("QuickDraw", 5, 1,  null, 0);
 		
 		internal static readonly StyleBonus Airshot = new ("Airshot", 15, 1, null, 0.75f);
+		internal static readonly StyleBonus FriendlyFire = new ("FriendlyFire", 20, 1);
 		internal static readonly StyleBonus ProjectileBoost = new ("ProjectileBoost", 20, 1,  null, 0.25f);
 		internal static readonly StyleBonus Uppercut = new("Uppercut", 30, 2,  null, 0.75f);
 		

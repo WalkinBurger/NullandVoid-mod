@@ -12,15 +12,15 @@ namespace NullandVoid.Common.UIs
 {
 	internal class ParryBarUI : UIState
 	{
-		private static Texture2D barEmpty;
-		private static Texture2D barFull;
-		private static Texture2D barAuto;
+		private static Asset<Texture2D> barEmpty;
+		private static Asset<Texture2D> barFull;
+		private static Asset<Texture2D> barAuto;
+		private static int barWidth;
+		private static int barHeight;
+		private Rectangle barFrame;
 		private UIElement area;
 		private UIImage barEmptyUI;
-		private static int  barWidth;
-		private static int  barHeight;
-		private int parryBarFrame = 0;
-		private Rectangle barFrame;
+		private int parryBarFrame;
 		Color barColor = Color.White;
 		
 		
@@ -29,31 +29,29 @@ namespace NullandVoid.Common.UIs
 			area.Left.Set(-360, 1);
 			area.Top.Set(15, 0);
 
-			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBar", AssetRequestMode.ImmediateLoad).Value;
-			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBarFullAnim", AssetRequestMode.ImmediateLoad).Value;
-			barAuto = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBarAuto",  AssetRequestMode.ImmediateLoad).Value;
+			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBar", AssetRequestMode.ImmediateLoad);
+			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBarFullAnim", AssetRequestMode.ImmediateLoad);
+			barAuto = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/ParryBarAuto",  AssetRequestMode.ImmediateLoad);
 			
-			barWidth = barEmpty.Width;
-			barHeight = barEmpty.Height;
-
 			barEmptyUI = new UIImage(barEmpty);
 			barEmptyUI.Left.Set(0, 0);
 			barEmptyUI.Top.Set(0, 0);
-			barEmptyUI.Color.A = 255;
-			
+
+			barWidth = barEmpty.Width();
+			barHeight = barEmpty.Height();
 			
 			area.Append(barEmptyUI);
 			Append(area);
 		}
 
 		public override void Draw(SpriteBatch spriteBatch) {
+			barFrame = barEmptyUI.GetInnerDimensions().ToRectangle();
 			if (!ModContent.GetInstance<NullandVoidClientConfig>().ShowParryUI) {
 				return;
 			}
 			base.Draw(spriteBatch);
 			
 			ParryPlayer parryPlayer = Main.LocalPlayer.GetModPlayer<ParryPlayer>();
-			barFrame = barEmptyUI.GetInnerDimensions().ToRectangle();
 			float parryRatio = (float)parryPlayer.ParryResource / ParryPlayer.ParryResourceMax;
 			
 			if (parryRatio == 1) {
@@ -67,21 +65,18 @@ namespace NullandVoid.Common.UIs
 			else {
 				parryBarFrame = 0;
 			}
-			
-			int barOffset = (int)((((float)barFull.Height / 6) - 1) * (1f - parryRatio));
+
+			int barOffset = (int)((((float)barFull.Height() / 6) - 1) * (1f - parryRatio));
 			barColor.A = barColor.R = barColor.G = barColor.B = parryRatio == 1f ? (byte)255 : (byte)128;
 			spriteBatch.Draw(
-				barFull,
+				barFull.Value,
 				new Vector2(barFrame.Left, barFrame.Top + barOffset),
 				parryRatio == 1f? new Rectangle(0, (barHeight + 2) * (parryBarFrame - 1), barWidth, barHeight) : new Rectangle(0, barOffset, barWidth, barHeight - barOffset),
 				barColor
 			);
 
 			if (parryPlayer.SwordParry) {
-				spriteBatch.Draw(barAuto, new Vector2(barFrame.Left, barFrame.Top), new Color(1f, 1f, 1f, 0.8f));
-				if (barEmptyUI.IsMouseHovering) {
-					Main.hoverItemName = "Sword Parrying";
-				}
+				spriteBatch.Draw(barAuto.Value, new Vector2(barFrame.Left, barFrame.Top), new Color(1f, 1f, 1f, 0.8f));
 			}
 		}
 	}
@@ -96,6 +91,11 @@ namespace NullandVoid.Common.UIs
 			ParryBarUI = new ParryBarUI();
 			ParryBarUserInterface = new UserInterface();
 			ParryBarUserInterface.SetState(ParryBarUI);
+		}
+
+		public override void Unload() {
+			ParryBarUI = null;
+			ParryBarUserInterface = null;
 		}
 		
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {

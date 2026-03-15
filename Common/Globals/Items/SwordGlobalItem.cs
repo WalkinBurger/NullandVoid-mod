@@ -19,7 +19,7 @@ namespace NullandVoid.Common.Globals.Items
 		}
 
 		public override bool AppliesToEntity(Item entity, bool lateInstantiation) {
-			return entity is { melee: true, pick: 0, axe: 0, hammer: 0, useStyle: ItemUseStyleID.Swing };
+			return entity.DamageType == DamageClass.Melee && entity.pick == 0 && entity.axe == 0 && entity.hammer == 0 && entity.useStyle == ItemUseStyleID.Swing;
 		}
 
 		public override void SetDefaults(Item item) {
@@ -35,7 +35,7 @@ namespace NullandVoid.Common.Globals.Items
 				int style = (useStylePlayer.HitStyle + 1) % 3;
 				float hitAngle = NullandVoidUtils.MouseAngle(Main.MouseScreen, Main.ScreenSize, true);
 				
-				Projectile.NewProjectile(player.GetSource_FromThis(), player.MountedCenter, Vector2.Zero, ModContent.ProjectileType<SwordSlashProjectile>(), 0, 0, Main.myPlayer, player.itemAnimationMax);
+				Projectile.NewProjectile(player.GetSource_ItemUse(item), player.MountedCenter, Vector2.Zero, ModContent.ProjectileType<SwordSlashProjectile>(), 0, 0, Main.myPlayer, player.itemAnimationMax);
 				player.GetModPlayer<ParryPlayer>().DoParry(true, 6);
 					
 				MovementMiscPlayer movementMiscPlayer = player.GetModPlayer<MovementMiscPlayer>();
@@ -63,14 +63,14 @@ namespace NullandVoid.Common.Globals.Items
 		public override void ModifyWeaponDamage(Item item, Player player, ref StatModifier damage) {
 			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
 			if (useStylePlayer.HitStyle == 0 && useStylePlayer.HitResetTimer != 0) {
-				damage.Multiplicative = 1.5f;
+				damage.Base *= 1.5f;
 			}
 		}
 
 		public override void ModifyWeaponKnockback(Item item, Player player, ref StatModifier knockback) {
 			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
 			if (useStylePlayer.HitStyle == 0 && useStylePlayer.HitResetTimer != 0) {
-				knockback.Multiplicative = 1.5f;
+				knockback.Base = 1.5f;
 			}
 		}
 

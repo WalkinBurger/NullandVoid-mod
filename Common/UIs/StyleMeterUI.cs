@@ -11,7 +11,6 @@ using Terraria;
 using Terraria.GameContent;
 using Terraria.GameContent.UI.Elements;
 using Terraria.Graphics.Shaders;
-using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
 
@@ -19,38 +18,34 @@ namespace NullandVoid.Common.UIs
 {
 	internal class StyleMeterUI : UIState
 	{
+		private static Asset<Texture2D> glowBar;
+		private static Asset<Texture2D> bgBottom;
+		private static Asset<Texture2D> bgMiddle;
+		private static Asset<Texture2D> bgTop;
+		private static Asset<Texture2D> freshnessBar;
+		private static Asset<Texture2D>[] effectUImages;
+		private Rectangle areaRect;
 		private UIElement area;
 		private UIText styleRankText;
 		private UIText styleRankShadow;
 		private UIText freshnessText;
-		private int textShake;
-		private int styleVisualFill;
 		private int idleTime;
-		private int hidFrame;
-		private int styleBonusOffset;
-		private Texture2D glowBar;
-		private Texture2D bgBottom;
-		private Texture2D bgMiddle;
-		private Texture2D bgTop;
-		private Texture2D freshnessBar;
-		private Asset<Texture2D>[] effectUImages;
+		private int styleVisualFill;
 		
 
 		public override void OnInitialize() {
 			idleTime = 600;
 			effectUImages = [
-				ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Crack", AssetRequestMode.ImmediateLoad),
-				ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/TerraGradient", AssetRequestMode.ImmediateLoad),
-				ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Turbulence", AssetRequestMode.ImmediateLoad),
+				ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Crack"),
+				ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/TerraGradient"),
+				ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Turbulence"),
 			];
 
-			glowBar = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/GlowBar", AssetRequestMode.ImmediateLoad).Value;
-
-			bgBottom = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundBottom", AssetRequestMode.ImmediateLoad).Value;
-			bgMiddle = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundMiddle", AssetRequestMode.ImmediateLoad).Value;
-			bgTop = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundTop", AssetRequestMode.ImmediateLoad).Value;
-			
-			freshnessBar = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/WeaponFreshnessBar", AssetRequestMode.ImmediateLoad).Value;
+			glowBar = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/GlowBar");
+			freshnessBar = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/WeaponFreshnessBar");
+			bgBottom = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundBottom", AssetRequestMode.ImmediateLoad);
+			bgMiddle = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundMiddle", AssetRequestMode.ImmediateLoad);
+			bgTop = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundTop", AssetRequestMode.ImmediateLoad);
 			
 			area = new UIElement();
 			area.Width.Set(280,0);
@@ -88,12 +83,10 @@ namespace NullandVoid.Common.UIs
 			styleRankShadow.Top.Set(-39, 1);
 			
 			area.Left.Set(-315, 1);
-			Rectangle areaRect = area.GetInnerDimensions().ToRectangle();
 			StylePlayer stylePlayer = Main.LocalPlayer.GetModPlayer<StylePlayer>();
 			StyleRank styleRank = stylePlayer.PlayerStyleRank;
 
 			int styleMeterHideTime = ModContent.GetInstance<NullandVoidClientConfig>().StyleMeterHideTime * 60;
-
 			if (styleMeterHideTime != 0) {
 				if (stylePlayer.StylePoints == 0) {
 					if (idleTime >= styleMeterHideTime) {
@@ -120,44 +113,45 @@ namespace NullandVoid.Common.UIs
 				area.Top.Set((int)(MathF.Sin(Main.rand.NextFloat()) * (styleRank.Rank - 1) * 2) - 215, 1);
 			}
 			
-			spriteBatch.Draw(bgBottom, new Vector2(areaRect.Left - 31, areaRect.Bottom - bgBottom.Height + 1), Color.White);
+			areaRect = area.GetInnerDimensions().ToRectangle();
+			
+			spriteBatch.Draw(bgBottom.Value, new Vector2(areaRect.Left - 31, areaRect.Bottom - bgBottom.Height() + 1), Color.White);
 
 			int freshness = (int)(stylePlayer.WeaponFreshness * 56);
-			spriteBatch.Draw(freshnessBar, new Rectangle(areaRect.Left - 23, areaRect.Bottom - 9 - freshness, 4, freshness), new Rectangle(0, 56 - freshness, 4, freshness), Color.White);
+			spriteBatch.Draw(freshnessBar.Value, new Rectangle(areaRect.Left - 23, areaRect.Bottom - 9 - freshness, 4, freshness), new Rectangle(0, 56 - freshness, 4, freshness), Color.White);
 
 			freshnessText.SetText($"x{MathF.Round(stylePlayer.WeaponFreshness + 0.25f, 2):0.00}");
 			freshnessText.Left.Set(-78, 0);
 			freshnessText.Top.Set(-20, 1);
 			
-			styleBonusOffset = areaRect.Bottom - 65;
+			int styleBonusOffset = areaRect.Bottom - 65;
 			for (int i = Math.Max(0, stylePlayer.PlayerStyleBonuses.Count - ModContent.GetInstance<NullandVoidClientConfig>().MaxStyleBonuses); i < stylePlayer.PlayerStyleBonuses.Count; i++) {
 				PlayerStyleBonus styleBonus = stylePlayer.PlayerStyleBonuses[i];
+				int styleBonusTier = Math.Max(0, styleBonus.BonusType.Tier);
 				Color textColor = StyleTierColors.Colors[styleBonus.BonusType.Tier];
 				float styleBonusFading = 1;
 				if (ModContent.GetInstance<NullandVoidClientConfig>().StyleMeterEase) {
 					styleBonusFading = NullandVoidUtils.FadeInOut((float)styleBonus.TimeAlive / (ModContent.GetInstance<NullandVoidClientConfig>().StyleBonusFadeTime * 60), 0.05f, 2);
-					styleBonusOffset -= (int)((styleBonus.BonusType.Tier * 4 + 17) * styleBonusFading);
+					styleBonusOffset -= (int)((styleBonusTier * 4 + 17) * styleBonusFading);
 					if (styleBonusFading != 1) {
 						textColor = textColor.MultiplyRGB(new Color(styleBonusFading, styleBonusFading, styleBonusFading));
 						textColor.A = (byte)Math.Min(255, (styleBonusFading) * 256);
 					}
 				}
 				else {
-					styleBonusOffset -= styleBonus.BonusType.Tier * 4 + 20;
+					styleBonusOffset -= styleBonusTier * 4 + 20;
 				}
 				
-				string text = styleBonus.Count == 1
-					? styleBonus.BonusType.Name.Value
-					: $"{styleBonus.BonusType.Name.Value} [x{styleBonus.Count}]";
+				string text = $"{(styleBonus.BonusType.Tier == -1? "-" : "+")} {styleBonus.BonusType.Name.Value}" + (styleBonus.Count > 1? $"[x{styleBonus.Count}]" : "");
 				
 				if (styleBonus.BonusType.Tier > 1) {
-					spriteBatch.Draw(glowBar, new Rectangle(areaRect.Left, styleBonusOffset - 2, areaRect.Width, 27), textColor.MultiplyRGBA(new Color(0.3f, 0.3f, 0.3f, 0)));
+					spriteBatch.Draw(glowBar.Value, new Rectangle(areaRect.Left, styleBonusOffset - 2, areaRect.Width, 27), textColor.MultiplyRGBA(new Color(0.3f, 0.3f, 0.3f, 0)));
 				}
 
-				spriteBatch.Draw(bgMiddle, new Rectangle(areaRect.Left - 13, styleBonusOffset, bgMiddle.Width, (int)((17 + styleBonus.BonusType.Tier * 4) * styleBonusFading)), Color.White);
+				spriteBatch.Draw(bgMiddle.Value, new Rectangle(areaRect.Left - 13, styleBonusOffset, bgMiddle.Width(), (int)((17 + styleBonusTier * 4) * styleBonusFading)), Color.White);
 				Color shadowColor = textColor.MultiplyRGB(new Color(0.25f, 0.25f, 0.25f, 0.9f));
-				spriteBatch.DrawString(FontAssets.MouseText.Value, text, new Vector2(areaRect.Left + 2 - styleBonus.BonusType.Tier * 2, styleBonusOffset + 2), shadowColor, 0f, Vector2.Zero, 0.8f + 0.15f * styleBonus.BonusType.Tier, SpriteEffects.None, 0f);
-				spriteBatch.DrawString(FontAssets.MouseText.Value, text, new Vector2(areaRect.Left - styleBonus.BonusType.Tier * 2, styleBonusOffset), textColor, 0f, Vector2.Zero, 0.8f + 0.15f * styleBonus.BonusType.Tier, SpriteEffects.None, 0f);
+				spriteBatch.DrawString(FontAssets.MouseText.Value, text, new Vector2(areaRect.Left + 2 - styleBonusTier * 2, styleBonusOffset + 2), shadowColor, 0f, Vector2.Zero, 0.8f + 0.15f * styleBonusTier, SpriteEffects.None, 0f);
+				spriteBatch.DrawString(FontAssets.MouseText.Value, text, new Vector2(areaRect.Left - styleBonusTier * 2, styleBonusOffset), textColor, 0f, Vector2.Zero, 0.8f + 0.15f * styleBonusTier, SpriteEffects.None, 0f);
 			}
 			
 			styleRankText.TextColor = styleRank.Color;
@@ -193,7 +187,7 @@ namespace NullandVoid.Common.UIs
 			barColor.A = 200;
 			spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(areaRect.Left, areaRect.Bottom - 60, styleVisualFill, 4), barColor);
 			
-			spriteBatch.Draw(bgTop, new Vector2(areaRect.Left - 13, styleBonusOffset - bgTop.Height), Color.White);
+			spriteBatch.Draw(bgTop.Value, new Vector2(areaRect.Left - 13, styleBonusOffset - bgTop.Height()), Color.White);
 		}
 	}
 	
@@ -207,6 +201,11 @@ namespace NullandVoid.Common.UIs
 			StyleMeterUI = new StyleMeterUI();
 			StyleMeterUserInterface = new UserInterface();
 			StyleMeterUserInterface.SetState(StyleMeterUI);
+		}
+
+		public override void Unload() {
+			StyleMeterUI = null;
+			StyleMeterUserInterface = null;
 		}
 
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {

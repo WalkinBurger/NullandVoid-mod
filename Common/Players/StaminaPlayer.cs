@@ -116,7 +116,7 @@ namespace NullandVoid.Common.Players
 				if (!DashJump && !CanDashJump && Player.GetModPlayer<MovementMiscPlayer>().Grounded) {
 					CanDashJump = true;
 				}
-				else if (CanDashJump && Player.velocity.Y != 0f && StaminaResource >= StaminaUsage) {
+				else if (CanDashJump && Player.justJumped && StaminaResource >= StaminaUsage) {
 					// Is long dash jump
 					AddStaminaResource(-StaminaUsage);
 					DashJump = true;

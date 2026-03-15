@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NullandVoid.Common.Globals.Items;
+using ReLogic.Content;
 using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
@@ -11,12 +12,11 @@ namespace NullandVoid.Content.Projectiles
 {
 	public class ParrySwordProjectile : ModProjectile
 	{
-		public int ParrySword = -1;
-		Texture2D slashTexture = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Slash").Value;
+		private static Texture2D slashTexture = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Slash").Value;
+		private Asset<Texture2D> swordTexture;
+		private int parrySword = -1;
 
-		public override string Texture {
-			get { return "NullandVoid/Assets/Textures/Slash"; }
-		}
+		public override string Texture => "NullandVoid/Assets/Textures/Slash";
 
 		public override void SetDefaults() {
 			Projectile.timeLeft = 20;
@@ -27,28 +27,26 @@ namespace NullandVoid.Content.Projectiles
 		public override bool PreDraw(ref Color lightColor) {
 			Player player = Main.player[Projectile.owner];
 
-			if (ParrySword == -1) {
-				Item item = player.HeldItem;
-				if (!item.IsAir && (item.useStyle == SwordGlobalItem.SwordUseStyle || item.useStyle == ItemUseStyleID.Rapier)) {
-					ParrySword = item.type;
-				}
-				else {
-					for (int i = 0; i < 10; i++) {
-						item = player.inventory[i];
-						if (!item.IsAir && (item.useStyle == SwordGlobalItem.SwordUseStyle || item.useStyle == ItemUseStyleID.Rapier)) {
-							ParrySword = item.type;
-							break;
+			if (parrySword == -1) {
+				for (int i = 0; i < 11; i++) {
+					Item item = player.inventory[i];
+					if (item.IsAir || (item.useStyle != SwordGlobalItem.SwordUseStyle && item.useStyle != ItemUseStyleID.Rapier)) {
+						if (i == 10) {
+							return false;
 						}
+						continue;
 					}
+
+					parrySword = item.type;
+					break;
 				}
 			}
 
-			if (ParrySword == -1) {
-				return false;
-			}
 			
-			Main.instance.LoadItem(ParrySword);
-			Texture2D swordTexture = TextureAssets.Item[ParrySword].Value;
+			if (swordTexture == null) {
+				Main.instance.LoadItem(parrySword);
+				swordTexture = TextureAssets.Item[parrySword];
+			}
 			float swordAngle = player.compositeBackArm.rotation + MathHelper.PiOver2 * player.direction;
 			if (player.direction == -1) {
 				swordAngle += MathHelper.Pi * 1.5f;
@@ -59,15 +57,15 @@ namespace NullandVoid.Content.Projectiles
 				armPosition -= Main.LocalPlayer.Center - player.MountedCenter;
 			}
 
-			Vector2 screenCenter = new Vector2(Main.screenWidth / 2, Main.screenHeight / 2);
+			Vector2 screenCenter = new(Main.screenWidth / 2, Main.screenHeight / 2);
 
 			Main.EntitySpriteDraw(
-				swordTexture,
+				swordTexture.Value,
 				armPosition + screenCenter,
-				new Rectangle(0, 0, swordTexture.Width, swordTexture.Height),
+				new Rectangle(0, 0, swordTexture.Width(), swordTexture.Height()),
 				lightColor,
 				swordAngle,
-				new Vector2(0, swordTexture.Height),
+				new Vector2(0, swordTexture.Height()),
 				1f,
 				SpriteEffects.None
 			);

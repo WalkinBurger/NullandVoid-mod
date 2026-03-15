@@ -24,9 +24,6 @@ namespace NullandVoid.Core
 				case MessageType.Dash:
 					HandleDashMessage(reader, whoAmI);
 					break;
-				case MessageType.MaintainVel:
-					HandleMaintainVelMessage(reader, whoAmI);
-					break;
 				case MessageType.Sword:
 					HandleSwordMessage(reader, whoAmI);
 					break;
@@ -44,7 +41,6 @@ namespace NullandVoid.Core
 			Sound,
 			Parry,
 			Dash,
-			MaintainVel,
 			Sword,
 			Shoot,
 		}
@@ -80,18 +76,18 @@ namespace NullandVoid.Core
 			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
 			packet.Write((byte)MessageType.Sound);
 			packet.Write((byte)whoAmI);
-			packet.Write((byte)sounds);
+			packet.Write((sbyte)((sounds + 1) * (fromSender ? 1 : -1)));
 			packet.Write((byte)wildVar);
-			packet.Write(fromSender);
 			packet.Send();
 		}
 		
 		public static void HandleSoundMessage(BinaryReader reader, int whoAmI) {
 			int player = reader.ReadByte();
-			int sounds = reader.ReadByte();
+			int sounds = reader.ReadSByte();
 			int wildVar = reader.ReadByte();
-			bool fromSender = reader.ReadBoolean();
-			if (Main.netMode == NetmodeID.Server) {
+			bool fromSender = sounds > 0;
+			sounds = Math.Abs(sounds) - 1;
+			if (Main.dedServ) {
 				player = whoAmI;
 				SendSoundMessage(player, sounds, wildVar, fromSender);
 			}
@@ -119,7 +115,7 @@ namespace NullandVoid.Core
 			int parryCount = reader.ReadSByte();
 			bool swordParry = parryCount > 0;
 			parryCount = Math.Abs(parryCount) - 1;
-			if (Main.netMode == NetmodeID.Server) {
+			if (Main.dedServ) {
 				player = whoAmI;
 				SendParryMessage(player, parryCount, swordParry);
 			}
@@ -142,7 +138,7 @@ namespace NullandVoid.Core
 			int dashTime = reader.ReadSByte();
 			int dashDirection = Math.Sign(dashTime);
 			dashTime = Math.Abs(dashTime);
-			if (Main.netMode == NetmodeID.Server) {
+			if (Main.dedServ) {
 				player = whoAmI;
 				SendDashMessage(player, dashTime, dashDirection);
 			}
@@ -150,32 +146,6 @@ namespace NullandVoid.Core
 				StaminaPlayer staminaPlayer = Main.player[player].GetModPlayer<StaminaPlayer>();
 				staminaPlayer.DashFrame = staminaPlayer.DashTime = dashTime;
 				staminaPlayer.DashDirection = dashDirection;
-			}
-		}
-		
-		
-		public static void SendMaintainVelMessage(int whoAmI, bool maintainVel) {
-			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
-			packet.Write((byte)MessageType.MaintainVel);
-			if (maintainVel) {
-				packet.Write((sbyte)(whoAmI + 1));
-			}
-			else {
-				packet.Write((sbyte)-(whoAmI + 1));
-			}
-			packet.Send(ignoreClient: whoAmI);
-		}
-		
-		public static void HandleMaintainVelMessage(BinaryReader reader, int whoAmI) {
-			int player = reader.ReadSByte();
-			bool maintainVel = player > 0;
-			player = Math.Abs(player) - 1;
-			if (Main.netMode == NetmodeID.Server) {
-				player = whoAmI;
-				SendMaintainVelMessage(player, maintainVel);
-			}
-			else {
-				Main.player[player].GetModPlayer<MovementMiscPlayer>().MaintainVelocity = maintainVel;
 			}
 		}
 		
@@ -193,7 +163,7 @@ namespace NullandVoid.Core
 			float angle = (float)reader.ReadHalf();
 			int style = Math.Abs((int)angle / 4);
 			angle %= 4;
-			if (Main.netMode == NetmodeID.Server) {
+			if (Main.dedServ) {
 				player = whoAmI;
 				SendSwordMessage(player, angle, style);
 			}
@@ -214,7 +184,7 @@ namespace NullandVoid.Core
 		public static void HandleShootMessage(BinaryReader reader, int whoAmI) {
 			int player = reader.ReadByte();
 			float angle = (float)reader.ReadHalf();
-			if (Main.netMode == NetmodeID.Server) {
+			if (Main.dedServ) {
 				player = whoAmI;
 				SendShootMessage(player, angle);
 			}
