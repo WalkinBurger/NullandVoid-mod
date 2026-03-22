@@ -143,9 +143,10 @@ namespace NullandVoid.Core
 				SendDashMessage(player, dashTime, dashDirection);
 			}
 			else {
-				StaminaPlayer staminaPlayer = Main.player[player].GetModPlayer<StaminaPlayer>();
-				staminaPlayer.DashFrame = staminaPlayer.DashTime = dashTime;
-				staminaPlayer.DashDirection = dashDirection;
+				MovementClassPlayer movementClassPlayer = Main.player[player].GetModPlayer<MovementClassPlayer>();
+				movementClassPlayer.UsingAbility = true;
+				movementClassPlayer.DashFrame = movementClassPlayer.DashTime = dashTime;
+				movementClassPlayer.AbilityDirection = dashDirection;
 			}
 		}
 		

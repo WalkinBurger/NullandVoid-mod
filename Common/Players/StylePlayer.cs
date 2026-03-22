@@ -8,6 +8,7 @@ using NullandVoid.Utils;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace NullandVoid.Common.Players
@@ -23,7 +24,7 @@ namespace NullandVoid.Common.Players
 	public class StylePlayer : ModPlayer
 	{
 		public int StylePoints;
-		public StyleRank PlayerStyleRank = StyleRanksList.Dull;
+		public StyleRank PlayerStyleRank = StyleRank.Dull;
 		public List<PlayerStyleBonus> PlayerStyleBonuses = [];
 		private int styleTimer;
 		private int styleLoseThreshold = 7;
@@ -54,13 +55,13 @@ namespace NullandVoid.Common.Players
 
 
 		public void UpdateStyleRank() {
-			if (StylePoints < PlayerStyleRank.LowerBound && PlayerStyleRank != StyleRanksList.Dull) {
-				PlayerStyleRank = StyleRanksList.List[PlayerStyleRank.Rank - 1];
+			if (StylePoints < PlayerStyleRank.LowerBound && PlayerStyleRank != StyleRank.Dull) {
+				PlayerStyleRank = StyleRank.List[PlayerStyleRank.Rank - 1];
 				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
 				styleLoseRate = PlayerStyleRank.LoseRate;
 			}
-			else if (PlayerStyleRank != StyleRanksList.Null && StylePoints >= PlayerStyleRank.UpperBound) {
-				PlayerStyleRank = StyleRanksList.List[PlayerStyleRank.Rank + 1];
+			else if (PlayerStyleRank != StyleRank.Null && StylePoints >= PlayerStyleRank.UpperBound) {
+				PlayerStyleRank = StyleRank.List[PlayerStyleRank.Rank + 1];
 				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
 				styleLoseRate = PlayerStyleRank.LoseRate;
 			}
@@ -81,11 +82,11 @@ namespace NullandVoid.Common.Players
 			int calcPoints = (int)(rawPoints * (WeaponFreshness + 0.25f) * (1 + MathF.Log10(count) * weight));
 			StylePoints += calcPoints;
 			if (ResetFreshnessNext) {
-				WeaponFreshness = 1;
+				WeaponFreshness += 0.25f;
 				ResetFreshnessNext = false;
 			}
 			else if (WeaponFreshness > 0) {
-				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 2048, 0, 0.1f);
+				WeaponFreshness -= MathHelper.Clamp(rawPoints * count * FreshnessDecayRate / 2048, 0, 0.2f);
 				WeaponFreshness = Math.Max(WeaponFreshness, 0);
 				freshnessTimer = 0;
 			}
@@ -183,10 +184,24 @@ namespace NullandVoid.Common.Players
 		}
 
 		public override void OnHurt(Player.HurtInfo info) {
-			AddStyleBonus(StyleBonusesList.Ouchie);
+			AddStyleBonus(StyleBonus.Ouchie);
 			CalcMinusPoints(info.Damage / 2, 1);
 		}
 
+		public void CheckQuickDraw(NPC.HitInfo hit) {
+			if (QuickDrawWindow != 0 && hit.DamageType != DamageClass.Summon) {
+				AddStyleBonus(StyleBonus.QuickDraw);
+				QuickDrawWindow = 0;
+			}
+		}
+		
+		public void CheckQuickDraw() {
+			if (QuickDrawWindow != 0) {
+				AddStyleBonus(StyleBonus.QuickDraw);
+				QuickDrawWindow = 0;
+			}
+		}
+		
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
 			if (!target.active) {
 				bool airKill = true;
@@ -198,30 +213,27 @@ namespace NullandVoid.Common.Players
 				}
 				if (airKill) {
 					if (Player.HeldItem.useStyle == SwordGlobalItem.SwordUseStyle) {
-						AddStyleBonus(StyleBonusesList.Uppercut);
+						AddStyleBonus(StyleBonus.Uppercut);
 					}
 					else if (hit.DamageType == DamageClass.Ranged) {
-						AddStyleBonus(StyleBonusesList.Airshot);
+						AddStyleBonus(StyleBonus.Airshot);
 					}
 				}
 
-				if (damageDone > target.lifeMax * 3) {
-					AddStyleBonus(StyleBonusesList.Overkill);
+				if (damageDone > target.lifeMax) {
+					AddStyleBonus(StyleBonus.Overkill);
 				}
-				AddStyleBonus(StyleBonusesList.Kill);
+				AddStyleBonus(StyleBonus.Kill);
 			}
 			
 			if (Lunging && hit.DamageType == DamageClass.Melee) {
 				Lunging = false;
 				SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundMiss with { Volume = 0.75f, Pitch = 0.5f, MaxInstances = 8 }, Player.Center);
 				Player.GiveImmuneTimeForCollisionAttack(30);
-				AddStyleBonus(Player.GetModPlayer<StaminaPlayer>().DashJump ? StyleBonusesList.LongLunge : StyleBonusesList.Lunge);
+				AddStyleBonus(Player.GetModPlayer<MovementClassPlayer>().DashJump ? StyleBonus.LongLunge : StyleBonus.Lunge);
 			}
 
-			if (QuickDrawWindow != 0 && hit.DamageType != DamageClass.Summon) {
-				AddStyleBonus(StyleBonusesList.QuickDraw);
-				QuickDrawWindow = 0;
-			}
+			CheckQuickDraw(hit);
 		}
 	}
 }

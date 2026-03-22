@@ -11,12 +11,17 @@ Items: {
 			It's snowing on Mt.Fuji
 			'''
 	}
+
+	WoodenShield: {
+		DisplayName: Wooden Shield
+		Tooltip: ""
+	}
 }
 
 # ==================== Keybinds ====================
 Keybinds: {
 	Parry.DisplayName: Parry
-	Dash.DisplayName: Dash
+	MovementAbility.DisplayName: Movement Ability
 }
 
 # ==================== Buffs ====================
@@ -36,7 +41,8 @@ Configs: {
 			Parrying: Parrying
 			StyleMeter: Style Meter
 			Stamina: Stamina
-			Blood: Blood Header
+			Blood: Blood
+			Misc: Miscellaneous
 		}
 
 		ParryFlashIntensity: {
@@ -113,6 +119,11 @@ Configs: {
 			Label: Blood Size
 			Tooltip: ""
 		}
+
+		CameraShakeIntensity: {
+			Label: Camera Shake Intensity
+			Tooltip: Intensity of the camera shake for miscellaneous visual effects. (0 to disable)
+		}
 	}
 
 	NullandVoidServerConfig.DisplayName: Server Config
@@ -125,6 +136,8 @@ Projectiles: {
 	GlowStarProjectile.DisplayName: Glow Star Projectile
 	SwordSlashProjectile.DisplayName: Sword Slash Projectile
 	ParryExplosion.DisplayName: Parry Explosion
+	SpecialParryProjectile.DisplayName: Special Parry Projectile
+	SimpleExplosion.DisplayName: Simple Explosion
 }
 
 # ==================== Styles ====================
@@ -140,19 +153,35 @@ Style: {
 	}
 
 	Bonuses: {
-		LameHealing: LAME HEALING
-		Ouchie: OUCHIE
-		Kill: KILL
-		Lunge: LUNGE
-		Pogo: POGO
-		Overkill: OVERKILL
-		QuickDraw: QUICK DRAW
-		Airshot: AIRSHOT
-		FriendlyFire: FRIENDLY FIRE
-		ProjectileBoost: PROJECTILE BOOST
-		Uppercut: UPPERCUT
 		LongLunge: LONG LUNGE
 		MultiKill: MULTIKILL
 		Parry: PARRY
+		Aerodynamic: AERODYNAMIC
+		Airshot: AIRSHOT
+		FriendlyFire: FRIENDLY FIRE
+		ProjectileBoost: PROJECTILE BOOST
+		QuickDraw: QUICK DRAW
+		RobinHood: ROBIN HOOD
+		Uppercut: UPPERCUT
+		Kill: KILL
+		Lunge: LUNGE
+		Overkill: OVERKILL
+		Pogo: POGO
+		LameHealing: LAME HEALING
+		Ouchie: OUCHIE
 	}
+}
+
+# ==================== UI ====================
+UI: {
+	NoVanillaGrapple: Disabled for grappler movement class
+	MovementClassAccessory: Movement Class Accessory
+}
+
+# ==================== Movement Class ====================
+MovementClass: {
+    Dasher: Dasher
+    Charger: Charger
+    Spirit: Spirit
+    Grappler: Grappler
 }

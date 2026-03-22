@@ -26,7 +26,7 @@ namespace NullandVoid.Common
 		protected override void Draw(ref PlayerDrawSet drawInfo) {
 			Player player = drawInfo.drawPlayer;
 			ParryPlayer parryPlayer = player.GetModPlayer<ParryPlayer>();
-			StaminaPlayer staminaPlayer =  player.GetModPlayer<StaminaPlayer>();
+			MovementClassPlayer staminaPlayer =  player.GetModPlayer<MovementClassPlayer>();
 			
 			float t = MathF.Pow((float)(parryPlayer.ParryFrame + 1) / 20, 4) * ModContent.GetInstance<NullandVoidClientConfig>().ParryFlashIntensity;
 			if (staminaPlayer.DashFrame != 0) {

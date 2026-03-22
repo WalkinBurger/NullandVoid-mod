@@ -52,7 +52,7 @@ namespace NullandVoid.Common.UIs
 			base.Draw(spriteBatch);
 			
 			ParryPlayer parryPlayer = Main.LocalPlayer.GetModPlayer<ParryPlayer>();
-			float parryRatio = (float)parryPlayer.ParryResource / ParryPlayer.ParryResourceMax;
+			float parryRatio = (float)parryPlayer.StatParry / ParryPlayer.StatParryMax;
 			
 			if (parryRatio == 1) {
 				if (parryBarFrame == 0) {

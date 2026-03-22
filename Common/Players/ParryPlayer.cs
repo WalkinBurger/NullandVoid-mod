@@ -19,11 +19,12 @@ namespace NullandVoid.Common.Players
 	public class ParryPlayer : ModPlayer
 	{
 		// Parrying stats fields
-		public const int ParryResourceMax = 50;
+		public const int StatParryMax = 50;
 		public const int ParryWindowMax = 10;
-		public int ParryResource;
-		public int ParryUsage;
-		public int ParryRegenRate;
+		public int StatParry;
+		public int ParryCost;
+		public int ParryRegen;
+		public int ParryRegenCount;
 		public int ParryFrame;
 		public List<int> ParriedProjectiles = [];
 		public List<int> ParriedNPCs = [];
@@ -35,15 +36,14 @@ namespace NullandVoid.Common.Players
 		public int ParryExplosionRange;
 		private int parryRange;
 		private float parryScope;
-		private int parryTimer;
 		private int parryWindow;
 		private int projectileBoostCount;
 		
 		
 		// Reset parrying stats
 		private void ResetParry() {
-			ParryRegenRate = 3;
-			ParryUsage = 50;
+			ParryRegen = 30;
+			ParryCost = 50;
 			parryRange = 50;
 			parryScope = MathHelper.PiOver2;
 			ParryExplosionRange = 150;
@@ -63,20 +63,24 @@ namespace NullandVoid.Common.Players
 		
 
 		
-		public void AddParryResource(int addAmount) {
-			ParryResource = Math.Clamp(ParryResource + addAmount, 0, ParryResourceMax);
+		public void ChangeStatParry(int addAmount) {
+			StatParry = Math.Clamp(StatParry + addAmount, 0, StatParryMax);
 		}
 		
 		public override void PostUpdateMiscEffects() {
-			parryTimer++;
-
-			if (parryTimer >= 5 && ParryResource < ParryResourceMax) {
-				ParryResource += ParryRegenRate;
-				if (ParryResource >= ParryResourceMax) {
-					ParryResource = Math.Clamp(ParryResource, 0, ParryResourceMax);
-					SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f, MaxInstances = 8 });
+			if (StatParry < StatParryMax) {
+				ParryRegenCount += ParryRegen;
+				if (ParryRegenCount > 60) {
+					StatParry++;
+					ParryRegenCount -= 60;
+					if (StatParry >= StatParryMax) {
+						StatParry = Math.Min(StatParry, StatParryMax);
+						SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f, MaxInstances = 8 });
+					}
 				}
-				parryTimer = 0;
+			}
+			else {
+				ParryRegenCount = 0;
 			}
 
 			SwordParry = Player.HeldItem.useStyle == SwordGlobalItem.SwordUseStyle;
@@ -91,7 +95,7 @@ namespace NullandVoid.Common.Players
 				if (parryCount != 0) {
 					ParryReflect(parryingProjectiles, parryingNPCs);
 					if (parryCount - projectileBoostCount != 0) {
-						Main.LocalPlayer.GetModPlayer<StaminaPlayer>().AddStaminaResource(5 * parryCount - projectileBoostCount);
+						Main.LocalPlayer.GetModPlayer<MovementClassPlayer>().ChangeStatStamina(5 * parryCount - projectileBoostCount);
 					}
 				}
 			}
@@ -109,14 +113,14 @@ namespace NullandVoid.Common.Players
 			}
 		}
 
-		public void DoParry(bool swordParry = false, int window = ParryResourceMax) {
+		public void DoParry(bool swordParry = false, int window = StatParryMax) {
 			if (!swordParry) {
 				parryWindow = ParryWindowMax;
 				ParryDirection = (int)MathF.Round(Math.Clamp(Main.MouseScreen.X - Main.screenWidth / 2, -1, 1));
 				if (ParryDirection == 0) {
 					ParryDirection = Player.direction;
 				}
-				AddParryResource(-ParryUsage);
+				ChangeStatParry(-ParryCost);
 			}
 			else {
 				parryWindow = window;
@@ -131,7 +135,7 @@ namespace NullandVoid.Common.Players
 		}
 
 		public override void ProcessTriggers(TriggersSet triggersSet) {
-			if (KeybindSystem.ParryKeybind.JustPressed && ParryResource >= ParryUsage && !SwordParry) {
+			if (KeybindSystem.ParryKeybind.JustPressed && StatParry >= ParryCost && !SwordParry) {
 				DoParry();
 			}
 		}
@@ -203,17 +207,14 @@ namespace NullandVoid.Common.Players
 				if (ParriedProjectiles.Contains(projectile.whoAmI)) {
 					continue;
 				}
-				if ((projectile.DamageType == DamageClass.Ranged || projectile.DamageType == DamageClass.Magic) && projectile.owner == Player.whoAmI) {
+				if ((projectile.DamageType == DamageClass.Ranged || projectile.DamageType == DamageClass.Magic || projectile.aiStyle == ProjAIStyleID.Boomerang) && projectile.owner == Player.whoAmI) {
 					if (projectile.type != ModContent.ProjectileType<ParryExplosion>() && 
 						(projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
 					    projectile.Center.DistanceSQ(Player.Center) <= (parryRange + quickBoostRange) * (parryRange + quickBoostRange) &&
 					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange + quickBoostRange, ParryAngle, modifiedScope)
 					    ) {
 						parryingProjectiles.Add(projectile.whoAmI);
-						if (stylePlayer.QuickDrawWindow != 0) {
-							stylePlayer.AddStyleBonus(StyleBonusesList.QuickDraw);
-							stylePlayer.QuickDrawWindow = 0;
-						}
+						stylePlayer.CheckQuickDraw();
 					}
 				}
 				else if (projectile.hostile) {
@@ -222,10 +223,7 @@ namespace NullandVoid.Common.Players
 					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange, ParryAngle, modifiedScope)
 					    ) {
 						parryingProjectiles.Add(projectile.whoAmI);
-						if (stylePlayer.QuickDrawWindow != 0) {
-							stylePlayer.AddStyleBonus(StyleBonusesList.QuickDraw);
-							stylePlayer.QuickDrawWindow = 0;
-						}
+						stylePlayer.CheckQuickDraw();
 					}
 				}
 			}
@@ -252,6 +250,7 @@ namespace NullandVoid.Common.Players
 			Vector2 knockbackVelocity = Vector2.Zero;
 			int parriedDamage = 0;
 			int tempProjectileBoostCount = 0;
+			int specialProjectileCount = 0;
 				
 			foreach (int i in parryingProjectiles) {
 				ParriedProjectiles.Add(i);
@@ -267,10 +266,21 @@ namespace NullandVoid.Common.Players
 					projectileBoostCount++;
 					tempProjectileBoostCount++;
 					isBoost = true;
+					if (projectile.aiStyle == ProjAIStyleID.Boomerang) {
+						Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.Aerodynamic);
+						specialProjectileCount++;
+						knockbackVelocity = projectile.velocity.SafeNormalize(Vector2.Zero);
+						NPC closetNPC = NullandVoidUtils.FindClosestNPC(1000, projectile.Center);
+						if (closetNPC != null) {
+							Projectile.NewProjectile(projectile.GetSource_FromThis(), closetNPC.Center - new Vector2(20, 0) * closetNPC.direction, Vector2.Zero, ModContent.ProjectileType<SpecialParryProjectile>(), 0, 0, 0, projectile.identity, (int)SpecialParryAIStyle.Boomerang, Player.whoAmI);
+						}
+						else {
+							projectile.velocity = (projectile.Center - Player.Center).SafeNormalize(Vector2.One) * new Vector2(12, 12);
+						}
+						continue;
+					}
 				}
-
-				projectile.localNPCHitCooldown = 20;
-				projectile.usesLocalNPCImmunity = true;
+				
 				projectile.knockBack *= 1.5f;
 				if (Math.Abs(projectile.Center.X - Player.Center.X / 8) < 3) {
 					projectile.velocity *= Math.Clamp((16 / projectile.velocity.Length()), 1f, 1.75f);
@@ -298,7 +308,7 @@ namespace NullandVoid.Common.Players
 				npc.PlayerInteraction(Player.whoAmI);
 				npc.SimpleStrikeNPC(SwordParry? npc.damage / 2 : npc.damage, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5, DamageClass.Melee);
 				if (!npc.active) {
-					Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonusesList.Kill);
+					Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.Kill);
 				}
 				
 				parriedDamage += NullandVoidUtils.EstimateDamage(npc);
@@ -330,10 +340,10 @@ namespace NullandVoid.Common.Players
 			int tempParryCount = parryingProjectiles.Count + parryingNPCs.Count - tempProjectileBoostCount;
 			StylePlayer stylePlayer = Player.GetModPlayer<StylePlayer>();
 			if (tempParryCount != 0) {
-				stylePlayer.AddStyleBonus(StyleBonusesList.Parry, tempParryCount);
+				stylePlayer.AddStyleBonus(StyleBonus.Parry, tempParryCount);
 			}
-			if (projectileBoostCount != 0) {
-				stylePlayer.AddStyleBonus(StyleBonusesList.ProjectileBoost, tempProjectileBoostCount);
+			if (projectileBoostCount - specialProjectileCount > 0) {
+				stylePlayer.AddStyleBonus(StyleBonus.ProjectileBoost, tempProjectileBoostCount - specialProjectileCount);
 			}
 
 			ParryEffects(Player.whoAmI, parryCount, SwordParry);

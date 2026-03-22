@@ -83,22 +83,22 @@ namespace NullandVoid.Common.Globals.Items
 			
 			Vector2 handPostion = player.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, player.compositeFrontArm.rotation);
 			float x = NullandVoidUtils.OutElastic(1 - ((float)player.itemAnimation / player.itemAnimationMax));
-			float size = MathF.Sqrt(hitbox.Width * hitbox.Width + hitbox.Height * hitbox.Height) * (MathF.Sin(x * MathHelper.Pi) * 1.3f + (float)(((useStylePlayer.HitStyle + 2) % 3) + 1) / 4);
+			float size = (hitbox.Width + hitbox.Height) * (MathF.Sin(x * MathHelper.Pi) * 0.65f + (float)(((useStylePlayer.HitStyle + 2) % 3) + 1) / 4);
 			Vector2 tipPosition = handPostion - new Vector2(size * MathF.Sin(player.compositeFrontArm.rotation), size * -MathF.Cos(player.compositeFrontArm.rotation));
 			hitbox = Terraria.Utils.CornerRectangle(handPostion, tipPosition);
 			
-			/* funny dust spam hitbox debug
-			for (int i = 0; i < 10; i++) {
-				Dust dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.BottomLeft().X, hitbox.BottomRight().X, (float)i / 10), MathHelper.Lerp(hitbox.BottomLeft().Y, hitbox.BottomRight().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
-				dust.noGravity = true;
-				dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.BottomRight().X, hitbox.TopRight().X, (float)i / 10), MathHelper.Lerp(hitbox.BottomRight().Y, hitbox.TopRight().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
-				dust.noGravity = true;
-				dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.TopRight().X, hitbox.TopLeft().X, (float)i / 10), MathHelper.Lerp(hitbox.TopRight().Y, hitbox.TopLeft().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
-				dust.noGravity = true;
-				dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.TopLeft().X, hitbox.BottomLeft().X, (float)i / 10), MathHelper.Lerp(hitbox.TopLeft().Y, hitbox.BottomLeft().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
-				dust.noGravity = true;
-			}
-			*/
+			// funny dust spam hitbox debug
+			// for (int i = 0; i < 10; i++) {
+			//  	Dust dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.BottomLeft().X, hitbox.BottomRight().X, (float)i / 10), MathHelper.Lerp(hitbox.BottomLeft().Y, hitbox.BottomRight().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
+			// 	dust.noGravity = true;
+			// 	dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.BottomRight().X, hitbox.TopRight().X, (float)i / 10), MathHelper.Lerp(hitbox.BottomRight().Y, hitbox.TopRight().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
+			//	dust.noGravity = true;
+			//	dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.TopRight().X, hitbox.TopLeft().X, (float)i / 10), MathHelper.Lerp(hitbox.TopRight().Y, hitbox.TopLeft().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
+			//	dust.noGravity = true;
+			//	dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.TopLeft().X, hitbox.BottomLeft().X, (float)i / 10), MathHelper.Lerp(hitbox.TopLeft().Y, hitbox.BottomLeft().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);
+			//	dust.noGravity = true;
+			// }
+			//
 		}
 	}
 }

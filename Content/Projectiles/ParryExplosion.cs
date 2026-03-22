@@ -16,9 +16,13 @@ namespace NullandVoid.Content.Projectiles
 		public override string Texture => "Terraria/Images/MagicPixel";
 
 		public override void SetDefaults() {
-			Projectile.penetrate = 1;
+			Projectile.penetrate = -1;
 			Projectile.friendly = true;
 			Projectile.alpha = 255;
+		}
+		
+		public override bool PreDraw(ref Color lightColor) {
+			return false;
 		}
 
 		public override void OnSpawn(IEntitySource source) {
@@ -27,7 +31,7 @@ namespace NullandVoid.Content.Projectiles
 		}
 
 		public override void AI() {
-			if (Projectile.timeLeft < 2) {
+			if (Projectile.timeLeft < 10) {
 				return;
 			}
 			Projectile parent = Main.projectile.FirstOrDefault(x => x.identity == (int)Projectile.ai[0]);
@@ -48,13 +52,13 @@ namespace NullandVoid.Content.Projectiles
 				return;
 			}
 			if (!target.active && Math.Sign(Projectile.ai[2]) == 1) {
-				player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonusesList.FriendlyFire);
+				player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.FriendlyFire);
 			}
 		}
 		
 		public void Explode() {
 			Projectile.Resize((int)Projectile.ai[1], (int)Projectile.ai[1]);
-			Projectile.timeLeft = 2;
+			Projectile.timeLeft = 10;
 			if (Main.dedServ) {
 				return;
 			}

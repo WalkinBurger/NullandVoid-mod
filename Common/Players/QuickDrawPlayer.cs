@@ -15,7 +15,6 @@ namespace NullandVoid.Common.Players
 		public Dictionary<int, int> HotbarDict = new(10);
 		
 		public override void PostUpdateMiscEffects() {
-			// Main.NewText((Player.itemTime, string.Join(", ", HotbarDict.ToArray())));
 			Player.selectItemOnNextUse = false;
 			foreach (Keys key in PlayerInput.GetPressedKeys().Where(key => (int)key >= 48 && (int)key <= 57)) {
 				int slot = (int)key - 49;

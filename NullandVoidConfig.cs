@@ -88,6 +88,13 @@ namespace NullandVoid
 		[Increment(0.05f)]
 		[Range(0.3f, 2f)]
 		public float BloodSize { get; set; }
+		
+		[Header("Misc")]
+		
+		[DefaultValue(0.75f)]
+		[Increment(0.05f)]
+		[Range(0f, 1f)]
+		public float CameraShakeIntensity { get; set; }
 	}
 
 	public class NullandVoidServerConfig : ModConfig

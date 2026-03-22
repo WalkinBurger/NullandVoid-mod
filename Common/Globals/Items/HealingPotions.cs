@@ -12,7 +12,7 @@ namespace NullandVoid.Common.Globals.Items
 		}
 
 		public override bool? UseItem(Item item, Player player) {
-			player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonusesList.LameHealing);
+			player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.LameHealing);
 			return true;
 		}
 	}

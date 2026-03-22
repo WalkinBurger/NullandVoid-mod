@@ -35,9 +35,9 @@ namespace NullandVoid.Common.UIs
 			base.Draw(spriteBatch);
 			
 			areaRect = area.GetInnerDimensions().ToRectangle();
-			StaminaPlayer staminaPlayer = Main.LocalPlayer.GetModPlayer<StaminaPlayer>();
-			float staminaRatio = (float)staminaPlayer.StaminaResource / 20;
-			int staminaBars = staminaPlayer.StaminaMax / 20;
+			MovementClassPlayer movementClassPlayer = Main.LocalPlayer.GetModPlayer<MovementClassPlayer>();
+			float staminaRatio = (float)movementClassPlayer.StatStamina / 20;
+			int staminaBars = movementClassPlayer.StatStaminaMax / 20;
 			for (int i = 0; i < staminaBars; i++) {
 				Vector2 barOrigin = new(areaRect.Left - i * 50, areaRect.Top);
 				spriteBatch.Draw(barEmpty.Value, barOrigin, Color.White);

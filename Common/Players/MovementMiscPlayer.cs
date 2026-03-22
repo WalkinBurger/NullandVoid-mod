@@ -93,7 +93,7 @@ namespace NullandVoid.Common.Players
 				count = pogoCounts[(int)PogoTypes.Sword];
 			}
 			Projectile.NewProjectile(Player.GetSource_FromThis(), Player.Bottom, Vector2.Zero, ModContent.ProjectileType<GlowStarProjectile>(), 0, 0, Main.myPlayer, 10f);
-			Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonusesList.Pogo);
+			Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.Pogo);
 			pogoing = true;
 			Player.velocity.Y = -boostVelocity;
 			Player.fallStart = Player.position.ToTileCoordinates().Y;
