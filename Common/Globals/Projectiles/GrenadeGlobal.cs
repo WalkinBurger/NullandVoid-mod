@@ -23,7 +23,7 @@ namespace NullandVoid.Common.Globals.Projectiles
 				return;
 			}
 			foreach (Projectile proj in Main.ActiveProjectiles) {
-				if (proj.aiStyle != ProjAIStyleID.Arrow || !(proj.Center.DistanceSQ(projectile.Center) < 1000 - proj.velocity.X * proj.velocity.Y)) {
+				if (proj.aiStyle != ProjAIStyleID.Arrow || proj.hostile || proj.owner != projectile.owner || !(proj.Center.DistanceSQ(projectile.Center) < 1000 - proj.velocity.X * proj.velocity.Y)) {
 					continue;
 				}
 				projectile.timeLeft = 2;

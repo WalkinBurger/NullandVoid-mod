@@ -7,7 +7,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.ModLoader;
 
-namespace NullandVoid.Common
+namespace NullandVoid.Common.Layers
 {
 	public class GlowLayer : PlayerDrawLayer
 	{
@@ -26,10 +26,9 @@ namespace NullandVoid.Common
 		protected override void Draw(ref PlayerDrawSet drawInfo) {
 			Player player = drawInfo.drawPlayer;
 			ParryPlayer parryPlayer = player.GetModPlayer<ParryPlayer>();
-			MovementClassPlayer staminaPlayer =  player.GetModPlayer<MovementClassPlayer>();
 			
 			float t = MathF.Pow((float)(parryPlayer.ParryFrame + 1) / 20, 4) * ModContent.GetInstance<NullandVoidClientConfig>().ParryFlashIntensity;
-			if (staminaPlayer.DashFrame != 0) {
+			if (player.GetModPlayer<MovementClassPlayer>().AbilityFrame != 0) {
 				t -= 0.15f;
 			}
 

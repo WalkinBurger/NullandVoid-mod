@@ -12,7 +12,7 @@ namespace NullandVoid.Content.Projectiles
 {
 	public class ParrySwordProjectile : ModProjectile
 	{
-		private static Texture2D slashTexture = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Slash").Value;
+		private static Asset<Texture2D> slashTexture = ModContent.Request<Texture2D>("NullandVoid/Assets/Textures/Slash");
 		private Asset<Texture2D> swordTexture;
 		private int parrySword = -1;
 
@@ -73,12 +73,12 @@ namespace NullandVoid.Content.Projectiles
 			float t = Math.Clamp(MathF.Pow((float)(Projectile.timeLeft - 5) / 15, 3), 0, 1) - 0.15f;
 			float slashAngle = swordAngle - 0.65f * player.direction;
 			Main.EntitySpriteDraw(
-				slashTexture,
+				slashTexture.Value,
 				armPosition + screenCenter,
-				new Rectangle(0, 0, slashTexture.Width, slashTexture.Height),
+				new Rectangle(0, 0, slashTexture.Width(), slashTexture.Height()),
 				new Color(t, t, t, 0f),
 				slashAngle,
-				new Vector2(0, slashTexture.Height),
+				new Vector2(0, slashTexture.Height()),
 				swordTexture.Size().Length() * 2 / slashTexture.Size().Length(),
 				SpriteEffects.None
 			);

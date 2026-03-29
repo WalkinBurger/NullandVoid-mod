@@ -230,7 +230,7 @@ namespace NullandVoid.Common.Players
 				Lunging = false;
 				SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundMiss with { Volume = 0.75f, Pitch = 0.5f, MaxInstances = 8 }, Player.Center);
 				Player.GiveImmuneTimeForCollisionAttack(30);
-				AddStyleBonus(Player.GetModPlayer<MovementClassPlayer>().DashJump ? StyleBonus.LongLunge : StyleBonus.Lunge);
+				AddStyleBonus(Player.GetModPlayer<MovementClassPlayer>().UsingAltAbility ? StyleBonus.LongLunge : StyleBonus.Lunge);
 			}
 
 			CheckQuickDraw(hit);

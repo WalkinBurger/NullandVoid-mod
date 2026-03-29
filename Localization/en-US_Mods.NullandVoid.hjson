@@ -1,5 +1,49 @@
 # This file will automatically update with entries for new content after a build and reload.
 
+# ==================== Common ====================
+Common: {
+	MovementAcc: "[c/888888:Hold <{0}> for more info]"
+	DasherAcc:
+		'''
+		{$MovementClass.Dasher} class accessory
+		{$Common.MovementAcc}
+		[c/999999:Uses {1} stamina]   
+		[c/999999:{2} {^2:second;seconds} of dash time]
+		[c/999999:{3} dash speed]
+		[c/999999:{4} {^4:second;seconds} of invincibility]
+		'''
+	ChargerAcc:
+		'''
+		{$MovementClass.Charger} class accessory
+		{$Common.MovementAcc}
+		[c/999999:Uses {1} stamina per second]
+		[c/999999:{2} max speed]
+		[c/999999:{3} charge acceleration]
+		[c/999999:{4} turn acceleration]
+		[c/999999:{5}% damage reduction at max speed]
+		[c/999999:{6} impact damage at max speed]
+		'''
+	SpiritAcc:
+		'''
+		{$MovementClass.Spirit} class accessory
+		{$Common.MovementAcc}
+		[c/999999:Uses {1} stamina per second]
+		[c/999999:{2} distance decay rate]
+		[c/999999:{3} damage cost]
+		[c/999999:{4} spirit speed]
+		[c/999999:{5} fling speed]
+		'''
+	GrapplerAcc:
+		'''
+		{$MovementClass.Spirit} class accessory
+		{$Common.MovementAcc}
+		[c/999999:Uses {1} stamina per second]
+		[c/999999:{2} range]
+		[c/999999:{3} pull speed on enemies]
+		[c/999999:{4} reel speed on player]
+		'''
+}
+
 # ==================== Items ====================
 Items: {
 	TestSword: {
@@ -14,7 +58,20 @@ Items: {
 
 	WoodenShield: {
 		DisplayName: Wooden Shield
-		Tooltip: ""
+		Tooltip:
+			'''
+			A primitive shield that grants the wearer a short dash
+			{$Common.DasherAcc}
+			'''
+	}
+
+	WoodenGauntlets: {
+		DisplayName: Wooden Gauntlets
+		Tooltip:
+			'''
+			Allows for a short charge
+			{$Common.ChargerAcc}
+			'''
 	}
 }
 
@@ -22,6 +79,7 @@ Items: {
 Keybinds: {
 	Parry.DisplayName: Parry
 	MovementAbility.DisplayName: Movement Ability
+	MovementAltAility.DisplayName: Movement Alt Aility
 }
 
 # ==================== Buffs ====================
@@ -153,6 +211,7 @@ Style: {
 	}
 
 	Bonuses: {
+	    FeatherFalling: FEATHER FALLING
 		LongLunge: LONG LUNGE
 		MultiKill: MULTIKILL
 		Parry: PARRY
@@ -180,8 +239,8 @@ UI: {
 
 # ==================== Movement Class ====================
 MovementClass: {
-    Dasher: Dasher
-    Charger: Charger
-    Spirit: Spirit
-    Grappler: Grappler
+	Dasher: Dasher
+	Charger: Charger
+	Spirit: Spirit
+	Grappler: Grappler
 }

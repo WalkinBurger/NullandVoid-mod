@@ -1,76 +1,85 @@
 using System;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using NullandVoid.Common.Systems;
 using NullandVoid.Content.Buffs;
 using NullandVoid.Core;
+using ReLogic.Content;
+using ReLogic.Utilities;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameInput;
 using Terraria.Graphics;
 using Terraria.ID;
-using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace NullandVoid.Common.Players
 {
-	public struct MovementClass(string name, int type)
-	{
-		public readonly LocalizedText Name = Language.GetText("Mods.NullandVoid.MovementClass." + name);
-		public readonly int Type = type;
-
-		public static readonly MovementClass Dasher = new("Dasher", 0);
-		public static readonly MovementClass Charger = new("Charger", 1);
-		public static readonly MovementClass Spirit = new("Spirit", 2);
-		public static readonly MovementClass Grappler = new("Grappler", 3);
-	}
-	
 	public class MovementClassPlayer : ModPlayer
 	{
 		public int StatStaminaMax;
 		public int StatStamina;
 		public int StaminaRegen;
 		public int StaminaRegenCount;
+		public int StaminaCost;
 		
-		public MovementClass? ClassType;
+		public int ClassType;
 		public bool UsingAbility;
+		public bool UsingAltAbility;
 		public Vector2 PreAbilityVel;
-		public int AbilityCost;
 		public int AbilityDirection;
-
-		public int DashFrame;
-		public int DashTime;
-		public bool DashJump;
-		public bool CanDashJump;
+		public bool StopMovement;
+		public SlotId SoundSlot;
+		public int AbilityFrame;
+		public int MovementFrame;
+		public int MovementFrameCount;
+		public int Cooldown;
+		public bool DrawAcc;
+		public bool ChangedAcc;
+		public Asset<Texture2D> AccTexture;
 
 		
-		private void ResetStamina() {
+		public StatMovement StatMovement = new();
+
+		public Vector2 ChargeAccel;
+		public float ChargeSpeed;
+
+		
+		private void ResetMovement() {
 			StatStaminaMax = 40;
-			StaminaRegen = 10;
+			StaminaRegen = 8;
 			
-			DashTime = 12;
+			ClassType = MovementClassID.None;
+			ChangedAcc = false;
+			DrawAcc = false;
+			StatMovement.Reset();
 		}
 
 		public override void Load() {
-			ResetStamina();
+			ResetMovement();
 		}
 
 		public override void ResetEffects() {
-			ResetStamina();
+			ResetMovement();
 		}
 
 		public override void UpdateDead() {
-			ResetStamina();
+			ResetMovement();
 		}
 
 		public override void PostUpdateMiscEffects() {
-			if (DashFrame != 0) {
+			StaminaCost = StatMovement.StaminaCost.Get();
+			if (Cooldown > 0) {
+				Cooldown--;
+			}
+			
+			if (UsingAbility || UsingAltAbility) {
 				return;
 			}
 
 			if (StatStamina < StatStaminaMax) {
 				StaminaRegenCount += StaminaRegen;
-				if (StaminaRegenCount > 60) {
+				if (StaminaRegenCount >= 60) {
 					StatStamina++;
 					StaminaRegenCount -= 60;
 					if (StatStamina % 20 == 0) {
@@ -90,109 +99,290 @@ namespace NullandVoid.Common.Players
 		}
 
 		public override void ProcessTriggers(TriggersSet triggersSet) {
-			if (!KeybindSystem.MovementAbilityKeybind.JustPressed || ClassType == null || StatStamina < AbilityCost || Player.mount.Active || DashTime > 2) {
+			if ((!KeybindSystem.MovementAbilityKeybind.JustPressed && !KeybindSystem.MovementAltAbilityKeybind.JustPressed) || ClassType == MovementClassID.None || (ClassType == MovementClassID.Dasher && StatStamina < StaminaCost) || Player.mount.Active || Cooldown > 0) {
 				return;
 			}
+			
+			if (KeybindSystem.MovementAbilityKeybind.JustPressed) {
+				UsingAbility = true;
+				if (Main.netMode != NetmodeID.SinglePlayer) {
+					NullandVoidNetwork.SendMovementAbilityMessage(Player.whoAmI);
+				}
+			}
+			else {
+				UsingAltAbility = true;
+				if (Main.netMode != NetmodeID.SinglePlayer) {
+					NullandVoidNetwork.SendMovementAltAbilityMessage(Player.whoAmI);
+				}
+			}
+			
+			UseAbility();
+		}
 
-			AbilityDirection = (int)triggersSet.DirectionsRaw.X;
+		public void UseAbility() {
+			PreAbilityVel = Player.velocity;
+			AbilityDirection = (int)PlayerInput.Triggers.Current.DirectionsRaw.X;
 			if (AbilityDirection == 0) {
 				AbilityDirection = Player.direction;
 			}
-
-			switch (ClassType.Value.Type) { 
-				case 0:
-					ChangeStatStamina(-AbilityCost);
-					DashFrame = DashTime;
+			switch (ClassType) { 
+				case MovementClassID.Dasher:
+					AbilityFrame = StatMovement.DashTime.Get();
 					Player.AddBuff(ModContent.BuffType<LungedBuff>(), 45);
-					if (Main.netMode != NetmodeID.SinglePlayer) {
-						NullandVoidNetwork.SendDashMessage(Player.whoAmI, DashTime, AbilityDirection);
+					Cooldown = 2;
+					if (UsingAbility) {
+						ChangeStatStamina(-StaminaCost);
+					}
+					else {
+						ChangeStatStamina(2 * -StaminaCost);
 					}
 					break;
-				case 1:
+				case MovementClassID.Charger:
+					PreAbilityVel /= 2;
+					if (StopMovement) {
+						StopMovement = false;
+						Cooldown = 30;
+					}
+					else {
+						StopMovement = true;
+						Cooldown = 2;
+					}
+					StaminaRegenCount = 0;
+					UsingAltAbility = false;
 					break;
-				case 2:
+				case MovementClassID.Spirit:
 					break;
-				case 3:
+				case MovementClassID.Grappler:
 					break;
 			}
 		}
 
 		public override void PreUpdateMovement() {
-			if (!UsingAbility || ClassType == null) {
+			if ((!UsingAbility && !UsingAltAbility) || ClassType == MovementClassID.None) {
 				return;
 			}
 
-			switch (ClassType.Value.Type) {
-				case 0:
+			switch (ClassType) {
+				case MovementClassID.Dasher:
 					DashAbility();
 					break;
-				case 1:
+				case MovementClassID.Charger:
+					ChargeAbility();
 					break;
-				case 2:
+				case MovementClassID.Spirit:
 					break;
-				case 3:
+				case MovementClassID.Grappler:
 					break;
 			}
 		}
 		
 		public override void DrawPlayer(Camera camera) {
-			if (DashFrame > 0) {
-				Player.armorEffectDrawShadow =  true;
+			if (UsingAbility) {
+				switch (ClassType) {
+					case MovementClassID.Charger:
+						Player.armorEffectDrawShadow =  true;
+						Player.legFrame.Y = 392 + 56 * (MovementFrame % 12);
+						Player.bodyFrame. Y = 392 + 56 * (MovementFrame % 12);
+						Player.direction = Player.velocity.X switch {
+							> 0 => 1,
+							< 0 => -1,
+							_ => Player.direction
+						};
+
+						Player.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Quarter, -Player.direction * MathHelper.PiOver2);
+						Player.SetCompositeArmBack(true, Player.CompositeArmStretchAmount.Quarter, -Player.direction * MathHelper.PiOver2);
+						DrawAcc = true;
+						break;
+					case MovementClassID.Dasher:
+						Player.armorEffectDrawShadow =  true;
+						break;
+				}
+			}
+			else if (UsingAltAbility) {
+				switch (ClassType) {
+					case MovementClassID.Dasher:
+						Player.armorEffectDrawShadow = true;
+						break;
+				}
 			}
 		}
+		
 
 		public void DashAbility() {
-			if ((DashTime - DashFrame) <= 5) {
-				if (DashFrame == DashTime) {
-					// Start of Dash
-					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with { Pitch = 0.6f, Volume = 0.3f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume, PitchVariance = 0.2f});
-					CanDashJump = DashJump = false;
-					
-					if (PreAbilityVel == Vector2.Zero) {
-						PreAbilityVel = Player.velocity;
-						Player.velocity.X = 20 * Player.direction;
-					}
-					
-					Player.SetImmuneTimeForAllTypes(DashTime);
-				}
-
-				// Check for dash jump
-				if (!DashJump && !CanDashJump && Player.GetModPlayer<MovementMiscPlayer>().Grounded) {
-					CanDashJump = true;
-				}
-				else if (CanDashJump && Player.justJumped && StatStamina >= AbilityCost) {
-					// Is long dash jump
-					ChangeStatStamina(-AbilityCost);
-					DashJump = true;
-					CanDashJump = false;
-					Player.velocity.X *= 1.5f;
-					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with {Pitch = -0.2f, Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume});
-				}
-			}
-
-			if (DashFrame == 1) {
-				// End of dash
-				if (!DashJump) {
-					Player.velocity.X = (Math.Max(Math.Abs(PreAbilityVel.X), 3.5f) + 2) * AbilityDirection;
-				}
-
-				PreAbilityVel = Vector2.Zero;
-				UsingAbility = false;
-			}
-			else {
-				if (!DashJump) {
-					Player.velocity.X = AbilityDirection * Math.Clamp(Math.Abs(Player.velocity.X) - 1f, 12, 20);
-					Player.velocity.Y = Math.Clamp(Player.velocity.Y, -5f, 0.5f);
+			int dashTime = StatMovement.DashTime.Get();
+			float dashSpeed = StatMovement.DashSpeed.Get();
+			if (dashTime == AbilityFrame) {
+				// Start of Dash
+				Player.SetImmuneTimeForAllTypes(StatMovement.IFrame.Get());
+				Player.velocity.X = (8 + dashSpeed) * Player.direction;
+				
+				if (UsingAbility) {
+					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with { Pitch = 0.6f, Volume = 0.3f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume, PitchVariance = 0.2f });
 				}
 				else {
-					Player.velocity.X = AbilityDirection * Math.Clamp(Math.Abs(Player.velocity.X) - 1.6f, 12, 40);
-					Player.velocity.Y -= 1f;
+					Player.velocity.X *= 1.5f;
+					Player.velocity.Y = -3;
+					SoundEngine.PlaySound(SoundID.DD2_BetsysWrathShot with { Pitch = -0.2f, Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume });
 				}
 			}
 			
+			if (AbilityFrame == 1) {
+				// End of dash
+				if (UsingAbility) {
+					Player.velocity.X = (Math.Max(Math.Abs(PreAbilityVel.X), 3.5f) + 2) * AbilityDirection;
+					UsingAbility = false;
+				}
+				else {
+					UsingAltAbility = false;
+				}
+				PreAbilityVel = Vector2.Zero;
+				Player.fallStart = Player.position.ToTileCoordinates().Y;
+			}
+			else {
+				if (UsingAbility) {
+					Player.velocity.X = AbilityDirection * Math.Clamp(Math.Abs(Player.velocity.X) - 1f, dashSpeed, 8 + dashSpeed);
+					Player.velocity.Y = Math.Clamp(Player.velocity.Y, -5f, 0.5f);
+				}
+				else {
+					Player.velocity.X = AbilityDirection * Math.Clamp(Math.Abs(Player.velocity.X) - 1.6f, dashSpeed, 28 + dashSpeed);
+					Player.velocity.Y -= 0.5f;
+				}
+			}
+
 			Player.noKnockback = true;
 			Player.immuneAlpha = 1;
-			DashFrame--;
+			AbilityFrame--;
+		}
+
+		public void ChargeAbility() {
+			if (StatStamina == 0 || !StopMovement) {
+				StopMovement = false;
+				UsingAbility = false;
+				ChargeAccel = Vector2.Zero;
+				Player.fallStart = Player.position.ToTileCoordinates().Y;
+				AbilityFrame = 0;
+				MovementFrame = 0;
+				MovementFrameCount = 0;
+				Cooldown = 30;
+				return;
+			}
+			
+			float maxSpeed = StatMovement.MaxSpeed.Get();
+			ChargeSpeed = (Math.Abs(PreAbilityVel.X) * Math.Abs(PreAbilityVel.X) + Math.Abs(PreAbilityVel.Y) * Math.Abs(PreAbilityVel.Y)) / (maxSpeed * maxSpeed);
+			float accelFactor = (StatMovement.ChargeAccel.Get() * (1 - ChargeSpeed) + StatMovement.TurnAccel.Get() * ChargeSpeed) / 128;
+			
+			if ((Player.direction == -1 && !Player.controlRight) || Player.controlLeft) {
+				ChargeAccel.X = (-maxSpeed - PreAbilityVel.X) * accelFactor;
+				if (!Player.controlUp && !Player.controlDown) {
+					PreAbilityVel.Y *= 0.98f;
+				}
+			}
+			else if ((Player.direction == 1 && !Player.controlLeft) || Player.controlRight) {
+				ChargeAccel.X = (maxSpeed - PreAbilityVel.X) * accelFactor;
+				if (!Player.controlUp && !Player.controlDown) {
+					PreAbilityVel.Y *= 0.98f;
+				}
+			}
+
+			if (Player.controlUp) {
+				ChargeAccel.Y = (-maxSpeed - PreAbilityVel.Y) * accelFactor;
+				if (!Player.controlLeft && !Player.controlRight) {
+					PreAbilityVel.X *= 0.98f;
+				}
+			}
+			else if (Player.controlDown) {
+				ChargeAccel.Y = (maxSpeed - PreAbilityVel.Y) * accelFactor;
+				if (!Player.controlLeft && !Player.controlRight) {
+					PreAbilityVel.X  *= 0.98f;
+				}
+			}
+
+			Player.controlUseItem = false;
+			StaminaRegenCount += StaminaCost;
+			if (StaminaRegenCount >= 60) {
+				StatStamina--;
+				StaminaRegenCount -= 60;
+			}
+
+			if (!SoundEngine.TryGetActiveSound(SoundSlot, out ActiveSound _)) {
+				SoundSlot = SoundEngine.PlaySound(SoundID.Run with { Volume = 0.7f, Pitch = ChargeSpeed - 0.25f, PitchVariance = 0.1f }, Player.Center);
+			}
+			
+			MovementFrameCount += (int)((ChargeSpeed + 0.5f) * 10);
+			if (MovementFrameCount > 12) {
+				MovementFrameCount -= 12;
+				MovementFrame++;
+			}
+
+			Dust dust = Dust.NewDustDirect(Player.Bottom + 2 * PreAbilityVel, 1, 1, DustID.GemDiamond, -PreAbilityVel.X, -PreAbilityVel.Y, Scale: ChargeSpeed * 2, newColor: new Color(255, 255, 0));
+			dust.noGravity = true;
+			
+			PreAbilityVel += ChargeAccel;
+			Player.velocity = PreAbilityVel;
+
+			if (Player.whoAmI != Main.myPlayer) {
+				return;
+			}
+
+			foreach (NPC npc in Main.ActiveNPCs) {
+				if (!(npc.DistanceSQ(Player.Center) < 100) || npc.immune[Player.whoAmI] != 0) {
+					continue;
+				}
+
+				int damage = (int)(StatMovement.ImpactDamage.Get() * ChargeSpeed) + 3;
+				npc.SimpleStrikeNPC(damage, Player.direction, false, 10 * (ChargeSpeed + 3));
+				npc.immune[Player.whoAmI] = 15;
+				Player.GetModPlayer<BloodPlayer>().BloodHeal(damage);
+			}
+		}
+
+
+		public override void ModifyHurt(ref Player.HurtModifiers modifiers) {
+			if (UsingAbility && ClassType == MovementClassID.Charger) {
+				if (Main.netMode != NetmodeID.SinglePlayer) {
+					NullandVoidNetwork.SendSoundMessage(Player.whoAmI, SoundsID.ChargeHurt, (int)(ChargeSpeed * 10));
+				}
+				else {
+					SoundEngine.PlaySound(Sounds.GetSound(SoundsID.ChargeHurt, (int)(ChargeSpeed * 10)));
+				}
+				modifiers.FinalDamage *= (1 - StatMovement.DamageReduction.Get());
+			}
+		}
+
+
+		public void UpdateDasher(int staminaCost, int dashTime, float dashSpeed, int iFrame) {
+			ClassType = MovementClassID.Dasher;
+			StatMovement.StaminaCost.Set(staminaCost);
+			StatMovement.DashTime.Set(dashTime);
+			StatMovement.DashSpeed.Set(dashSpeed);
+			StatMovement.IFrame.Set(iFrame);
+		}
+		
+		public void UpdateCharger(int staminaCost, float maxSpeed, float chargeAccel, float turnAccel, float damageReduction, int impactDamage) {
+			ClassType = MovementClassID.Charger;
+			StatMovement.StaminaCost.Set(staminaCost);
+			StatMovement.MaxSpeed.Set(maxSpeed);
+			StatMovement.ChargeAccel.Set(chargeAccel);
+			StatMovement.TurnAccel.Set(turnAccel);
+			StatMovement.DamageReduction.Set(damageReduction);
+			StatMovement.ImpactDamage.Set(impactDamage);
+		}
+
+		public void UpdateSpirit(int staminaCost, float distanceDecayRate, int damageCost, float spiritSpeed, float flingSpeed) {
+			ClassType = MovementClassID.Spirit;
+			StatMovement.StaminaCost.Set(staminaCost);
+			StatMovement.DistanceDecayRate.Set(distanceDecayRate);
+			StatMovement.DamageCost.Set(damageCost);
+			StatMovement.SpiritSpeed.Set(spiritSpeed);
+			StatMovement.FlingSpeed.Set(flingSpeed);
+		}
+
+		public void UpdateGrappler(int staminaCost, int range, float pullSpeed, float reelSpeed) {
+			ClassType = MovementClassID.Grappler;
+			StatMovement.StaminaCost.Set(staminaCost);
+			StatMovement.Range.Set(range);
+			StatMovement.PullSpeed.Set(pullSpeed);
+			StatMovement.ReelSpeed.Set(reelSpeed);
 		}
 	}
 }

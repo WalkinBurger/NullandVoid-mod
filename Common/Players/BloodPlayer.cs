@@ -8,6 +8,11 @@ namespace NullandVoid.Common.Players
 {
 	public class BloodPlayer : ModPlayer
 	{
+		public void BloodHeal(int damage) {
+			Player.statLife = Math.Min(Player.statLifeMax2, Player.statLife + (int)(damage * (1 + ((float)Player.GetModPlayer<StylePlayer>().PlayerStyleRank.Rank / 4))));
+			NetMessage.SendData(MessageID.PlayerLifeMana, number: Player.whoAmI);
+		}
+		
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
 			if (target.type == NPCID.TargetDummy) {
 				return;
@@ -28,9 +33,8 @@ namespace NullandVoid.Common.Players
 				closestPoint.Y = target.Hitbox.Bottom;
 			}
 
-			if (closestPoint.DistanceSQ(Player.Center) < (hit.DamageType == DamageClass.Melee? 5000 : 20000)) {
-				Player.statLife = Math.Min(Player.statLifeMax2, Player.statLife + (int)(damageDone * (1 + ((float)Player.GetModPlayer<StylePlayer>().PlayerStyleRank.Rank / 4))));
-				NetMessage.SendData(MessageID.PlayerLifeMana, number: Player.whoAmI);
+			if (closestPoint.DistanceSQ(Player.Center) < (hit.DamageType == DamageClass.Melee ? 5000 : 20000)) {
+				BloodHeal(damageDone);
 			}
 		}
 	}

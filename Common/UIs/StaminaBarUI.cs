@@ -46,14 +46,14 @@ namespace NullandVoid.Common.UIs
 					continue;
 				}
 				
-				int barOffset = (int)(barEmpty.Width() * (1 - (staminaRatio - i)));
+				int barFill = (int)(barEmpty.Width() * (1 - (staminaRatio - i)));
 				Color barColor = Color.White;
 				barColor.A = barColor.R = barColor.G = barColor.B = staminaRatio - i >= 1f ? (byte)255 : (byte)128;
 
 				spriteBatch.Draw(
 					barFull.Value,
-					new Vector2(barOrigin.X + barOffset, barOrigin.Y),
-					new Rectangle(barOffset, 0, barEmpty.Width() - barOffset, barEmpty.Height()),
+					new Vector2(barOrigin.X + barFill, barOrigin.Y),
+					new Rectangle(barFill, 0, barEmpty.Width() - barFill, barEmpty.Height()),
 					barColor
 				);
 			}

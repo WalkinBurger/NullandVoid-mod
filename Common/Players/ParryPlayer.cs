@@ -183,16 +183,18 @@ namespace NullandVoid.Common.Players
 			}
 
 
-			if (info.DamageSource.SourceOtherIndex == 0) {
-				ParryFrame = 20;
-				ParryAngle = MathHelper.PiOver4;
-				ParryDirection = Player.direction;
-				ParryEffects(Player.whoAmI, 1, SwordParry);
-				Player.velocity = new Vector2(Player.velocity.X * 2f, -10);
-				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
-				return true;
+			if (info.DamageSource.SourceOtherIndex != 0) {
+				return ParriedProjectiles.Contains(info.DamageSource.SourceProjectileLocalIndex) || ParriedNPCs.Contains(info.DamageSource.SourceNPCIndex);
 			}
-			return ParriedProjectiles.Contains(info.DamageSource.SourceProjectileLocalIndex) || ParriedNPCs.Contains(info.DamageSource.SourceNPCIndex);
+
+			ParryFrame = 20;
+			ParryAngle = MathHelper.PiOver4;
+			ParryDirection = Player.direction;
+			ParryEffects(Player.whoAmI, 1, SwordParry);
+			Player.velocity = new Vector2(Player.velocity.X * 2f, -10);
+			Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.FeatherFalling);
+			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
+			return true;
 		}
 
 		public (List<int> parryingProjectiles, List<int> parryingNPCs) GetParried() {

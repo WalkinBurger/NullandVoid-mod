@@ -43,14 +43,14 @@ namespace NullandVoid.Common.Players
 		}
 		
 		public override void Load() {
-			On_Player.HorizontalMovement += On_PlayerOnHorizontalMovement;
+			On_Player.HorizontalMovement += DetourHorizontalMovement;
 		}
 
 		public override void Unload() {
-			On_Player.HorizontalMovement -= On_PlayerOnHorizontalMovement;
+			On_Player.HorizontalMovement -= DetourHorizontalMovement;
 		}
 
-		private static void On_PlayerOnHorizontalMovement(On_Player.orig_HorizontalMovement orig, Player self) {
+		private static void DetourHorizontalMovement(On_Player.orig_HorizontalMovement orig, Player self) {
 			if (((self.controlLeft && self.velocity.X < 0) || (self.controlRight && self.velocity.X > 0)) && !self.GetModPlayer<MovementMiscPlayer>().Grounded) {
 				self.runSlowdown = 0;
 			}
@@ -60,7 +60,7 @@ namespace NullandVoid.Common.Players
 			orig(self);
 		}
 
-
+		
 		public bool CanPogo(PogoTypes pogoType) {
 			Vector2 aimPosition = (Main.MouseScreen - new Vector2 (Main.screenWidth / 2, Main.screenHeight / 2));
 			if (!canNextPogo || pogoCounts[(int)pogoType] > 4 || pogoCoolDown != 0 || Math.Abs(aimPosition.X) > 35f || aimPosition.Y > 70f || aimPosition.Y < 0 ) {
@@ -100,11 +100,11 @@ namespace NullandVoid.Common.Players
 
 			
 			if (Main.netMode != NetmodeID.SinglePlayer) {
-				NullandVoidNetwork.SendSoundMessage(Player.whoAmI, NullandVoidNetwork.Sounds.Pogo, count);
+				NullandVoidNetwork.SendSoundMessage(Player.whoAmI, SoundsID.Pogo, count);
 				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			}
 			else {
-				SoundEngine.PlaySound(SoundID.DrumClosedHiHat with { Pitch = count == 5? -1f : 0, PitchVariance = 0.2f });
+				SoundEngine.PlaySound(Sounds.GetSound(SoundsID.Pogo, count));
 			}
 		}
 

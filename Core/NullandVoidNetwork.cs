@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Immutable;
 using System.IO;
 using NullandVoid.Common.Players;
 using Terraria;
@@ -21,14 +20,17 @@ namespace NullandVoid.Core
 				case MessageType.Parry:
 					HandleParryMessage(reader, whoAmI);
 					break;
-				case MessageType.Dash:
-					HandleDashMessage(reader, whoAmI);
-					break;
 				case MessageType.Sword:
 					HandleSwordMessage(reader, whoAmI);
 					break;
 				case MessageType.Shoot:
 					HandleShootMessage(reader, whoAmI);
+					break;
+				case MessageType.MovementAbility:
+					HandleMovementAbilityMessage(reader, whoAmI);
+					break;
+				case MessageType.MovementAltAbility:
+					HandleMovementAltAbilityMessage(reader, whoAmI);
 					break;
 				default:
 					NullandVoid.Instance.Logger.WarnFormat("Null and Void: Unknown Message type: {0}", msgType);
@@ -40,43 +42,29 @@ namespace NullandVoid.Core
 		{
 			Sound,
 			Parry,
-			Dash,
 			Sword,
 			Shoot,
+			MovementAbility,
+			MovementAltAbility,
 		}
 		
 
-		public enum Sounds : byte
-		{
-			Pogo,
-		}
 		
-		public static SoundStyle SoundList(int sounds, int wildVar) {
-			float staminaSoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().StaminaSoundVolume;
-			float parrySoundVolume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume;
-		
-			ImmutableList<SoundStyle> soundList = [
-				SoundID.DrumClosedHiHat with { Pitch = wildVar == 5? -1f : 0, PitchVariance = 0.2f },
-			];
-
-			return soundList[sounds];
-		}
-		
-		public static void SendSoundMessage(int whoAmI, Sounds sounds, int wildVar = 1, bool fromSender = true) {
+		public static void SendSoundMessage(int whoAmI, SoundsID soundsID, int wildVar = 1, bool fromSender = true) {
 			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
 			packet.Write((byte)MessageType.Sound);
 			packet.Write((byte)whoAmI);
-			packet.Write((byte)sounds);
+			packet.Write((byte)soundsID);
 			packet.Write((byte)wildVar);
 			packet.Write(fromSender);
 			packet.Send();
 		}
 		
-		public static void SendSoundMessage(int whoAmI, int sounds, int wildVar = -1, bool fromSender = true) {
+		public static void SendSoundMessage(int whoAmI, int soundsID, int wildVar = -1, bool fromSender = true) {
 			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
 			packet.Write((byte)MessageType.Sound);
 			packet.Write((byte)whoAmI);
-			packet.Write((sbyte)((sounds + 1) * (fromSender ? 1 : -1)));
+			packet.Write((sbyte)((soundsID + 1) * (fromSender ? 1 : -1)));
 			packet.Write((byte)wildVar);
 			packet.Send();
 		}
@@ -92,7 +80,7 @@ namespace NullandVoid.Core
 				SendSoundMessage(player, sounds, wildVar, fromSender);
 			}
 			else {
-				SoundEngine.PlaySound(SoundList(sounds, wildVar), fromSender? Main.player[player].Center : null);
+				SoundEngine.PlaySound(Sounds.GetSound(sounds, wildVar), fromSender? Main.player[player].Center : null);
 			}
 		}
 		
@@ -121,32 +109,6 @@ namespace NullandVoid.Core
 			}
 			else {
 				Main.player[player].GetModPlayer<ParryPlayer>().ParryEffects(player, parryCount, swordParry);
-			}
-		}
-		
-		
-		public static void SendDashMessage(int whoAmI, int dashTime, int dashDirection) {
-			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
-			packet.Write((byte)MessageType.Dash);
-			packet.Write((byte)whoAmI);
-			packet.Write((sbyte)(dashTime * dashDirection));
-			packet.Send(ignoreClient: whoAmI);
-		}
-		
-		public static void HandleDashMessage(BinaryReader reader, int whoAmI) {
-			int player = reader.ReadByte();
-			int dashTime = reader.ReadSByte();
-			int dashDirection = Math.Sign(dashTime);
-			dashTime = Math.Abs(dashTime);
-			if (Main.dedServ) {
-				player = whoAmI;
-				SendDashMessage(player, dashTime, dashDirection);
-			}
-			else {
-				MovementClassPlayer movementClassPlayer = Main.player[player].GetModPlayer<MovementClassPlayer>();
-				movementClassPlayer.UsingAbility = true;
-				movementClassPlayer.DashFrame = movementClassPlayer.DashTime = dashTime;
-				movementClassPlayer.AbilityDirection = dashDirection;
 			}
 		}
 		
@@ -191,6 +153,48 @@ namespace NullandVoid.Core
 			}
 			else {
 				Main.player[player].GetModPlayer<UseStylePlayer>().ShootAngle = angle;
+			}
+		}
+		
+		
+		public static void SendMovementAbilityMessage(int whoAmI) {
+			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
+			packet.Write((byte)MessageType.MovementAbility);
+			packet.Write((byte)whoAmI);
+			packet.Send(ignoreClient: whoAmI);
+		}
+		
+		public static void HandleMovementAbilityMessage(BinaryReader reader, int whoAmI) {
+			int player = reader.ReadByte();
+			if (Main.dedServ) {
+				player = whoAmI;
+				SendMovementAbilityMessage(player);
+			}
+			else {
+				MovementClassPlayer movementClassPlayer = Main.player[player].GetModPlayer<MovementClassPlayer>();
+				movementClassPlayer.UsingAbility = true;
+				movementClassPlayer.UseAbility();
+			}
+		}
+		
+		
+		public static void SendMovementAltAbilityMessage(int whoAmI) {
+			ModPacket packet = ModContent.GetInstance<NullandVoid>().GetPacket();
+			packet.Write((byte)MessageType.MovementAltAbility);
+			packet.Write((byte)whoAmI);
+			packet.Send(ignoreClient: whoAmI);
+		}
+		
+		public static void HandleMovementAltAbilityMessage(BinaryReader reader, int whoAmI) {
+			int player = reader.ReadByte();
+			if (Main.dedServ) {
+				player = whoAmI;
+				SendMovementAltAbilityMessage(player);
+			}
+			else {
+				MovementClassPlayer movementClassPlayer = Main.player[player].GetModPlayer<MovementClassPlayer>();
+				movementClassPlayer.UsingAltAbility = true;
+				movementClassPlayer.UseAbility();
 			}
 		}
 	}

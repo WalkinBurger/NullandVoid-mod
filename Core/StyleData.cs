@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Terraria;
-using Terraria.ID;
 using Terraria.Localization;
 
 namespace NullandVoid.Core
@@ -15,6 +13,7 @@ namespace NullandVoid.Core
 		public readonly float StackPointsWeight = stackPointsWeight;
 		
 		
+		public static readonly StyleBonus FeatherFalling = new("FeatherFalling", 70, 2);
 		public static readonly StyleBonus LongLunge = new("LongLunge", 50, 2);
 		public static readonly StyleBonus MultiKill = new("MultiKill", 45, 2);
 		public static readonly StyleBonus Parry = new("Parry", 50, 2);
