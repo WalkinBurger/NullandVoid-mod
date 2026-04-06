@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.Xna.Framework;
 using NullandVoid.Common.Globals.Items;
 using NullandVoid.Common.Systems;
@@ -38,8 +37,8 @@ namespace NullandVoid.Common.Players
 		private float parryScope;
 		private int parryWindow;
 		private int projectileBoostCount;
-		
-		
+
+
 		// Reset parrying stats
 		private void ResetParry() {
 			ParryRegen = 30;
@@ -60,13 +59,12 @@ namespace NullandVoid.Common.Players
 		public override void UpdateDead() {
 			ResetParry();
 		}
-		
 
-		
+
 		public void ChangeStatParry(int addAmount) {
 			StatParry = Math.Clamp(StatParry + addAmount, 0, StatParryMax);
 		}
-		
+
 		public override void PostUpdateMiscEffects() {
 			if (StatParry < StatParryMax) {
 				ParryRegenCount += ParryRegen;
@@ -75,7 +73,7 @@ namespace NullandVoid.Common.Players
 					ParryRegenCount -= 60;
 					if (StatParry >= StatParryMax) {
 						StatParry = Math.Min(StatParry, StatParryMax);
-						SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with {Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f, MaxInstances = 8 });
+						SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryFilled") with { Volume = 0.4f * ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.5f, Pitch = 0.3f, MaxInstances = 8 });
 					}
 				}
 			}
@@ -84,10 +82,10 @@ namespace NullandVoid.Common.Players
 			}
 
 			SwordParry = Player.HeldItem.useStyle == SwordGlobalItem.SwordUseStyle;
-			if (SwordParry) { 
+			if (SwordParry) {
 				parryScope = MathHelper.PiOver4;
 			}
-			
+
 			if (parryWindow != 0) {
 				parryWindow--;
 				(List<int> parryingProjectiles, List<int> parryingNPCs) = GetParried();
@@ -95,7 +93,7 @@ namespace NullandVoid.Common.Players
 				if (parryCount != 0) {
 					ParryReflect(parryingProjectiles, parryingNPCs);
 					if (parryCount - projectileBoostCount != 0) {
-						Main.LocalPlayer.GetModPlayer<MovementClassPlayer>().ChangeStatStamina(5 * parryCount - projectileBoostCount);
+						Player.GetModPlayer<MovementClassPlayer>().ChangeStatStamina(5 * parryCount - projectileBoostCount);
 					}
 				}
 			}
@@ -120,6 +118,7 @@ namespace NullandVoid.Common.Players
 				if (ParryDirection == 0) {
 					ParryDirection = Player.direction;
 				}
+
 				ChangeStatParry(-ParryCost);
 			}
 			else {
@@ -148,14 +147,14 @@ namespace NullandVoid.Common.Players
 			}
 			else if (parryCount != 0) {
 				SoundEngine.PlaySound(new SoundStyle("NullandVoid/Assets/Sounds/ParryHit") with { Volume = ModContent.GetInstance<NullandVoidClientConfig>().ParrySoundVolume, PitchVariance = 0.2f, Pitch = (parryCount - 1) * 0.1f, MaxInstances = 8 }, player.Center);
-				
-				for (int i = 0; i < 8; i++) {
+
+				for (int i = 0; i < 11 * ModContent.GetInstance<NullandVoidClientConfig>().GeneralDustAmount; i++) {
 					Dust dust = Dust.NewDustDirect(player.Center, 10, 10, DustID.Firework_Yellow, Scale: 0.6f);
 					dust.noGravity = true;
 				}
 			}
-			
-			
+
+
 			if (Player.whoAmI != Main.myPlayer) {
 				return;
 			}
@@ -172,12 +171,12 @@ namespace NullandVoid.Common.Players
 				NullandVoidNetwork.SendParryMessage(Player.whoAmI, parryCount, swordParry);
 			}
 		}
-		
+
 		public override bool ConsumableDodge(Player.HurtInfo info) {
 			if (SwordParryIFrame != 0) {
 				return true;
 			}
-			
+
 			if (parryWindow <= 0) {
 				return false;
 			}
@@ -193,28 +192,29 @@ namespace NullandVoid.Common.Players
 			ParryEffects(Player.whoAmI, 1, SwordParry);
 			Player.velocity = new Vector2(Player.velocity.X * 2f, -10);
 			Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.FeatherFalling);
-			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);		
+			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			return true;
 		}
 
 		public (List<int> parryingProjectiles, List<int> parryingNPCs) GetParried() {
 			List<int> parryingProjectiles = [];
 			List<int> parryingNPCs = [];
-			int modifiedRange = SwordParry? (int)(parryRange / 1.5f) : parryRange;
-			float modifiedScope = SwordParry? (parryScope / 1.5f) : parryScope;
-			int quickBoostRange = (SwordParry && QuickProjectileBoostWindow != 0)? 200 : 0;
+			int modifiedRange = SwordParry ? (int)(parryRange / 1.5f) : parryRange;
+			float modifiedScope = SwordParry ? parryScope / 1.5f : parryScope;
+			int quickBoostRange = SwordParry && QuickProjectileBoostWindow != 0 ? 200 : 0;
 			StylePlayer stylePlayer = Player.GetModPlayer<StylePlayer>();
-			
+
 			foreach (Projectile projectile in Main.ActiveProjectiles) {
 				if (ParriedProjectiles.Contains(projectile.whoAmI)) {
 					continue;
 				}
+
 				if ((projectile.DamageType == DamageClass.Ranged || projectile.DamageType == DamageClass.Magic || projectile.aiStyle == ProjAIStyleID.Boomerang) && projectile.owner == Player.whoAmI) {
-					if (projectile.type != ModContent.ProjectileType<ParryExplosion>() && 
-						(projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
+					if (projectile.type != ModContent.ProjectileType<ParryExplosion>() &&
+					    (projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
 					    projectile.Center.DistanceSQ(Player.Center) <= (parryRange + quickBoostRange) * (parryRange + quickBoostRange) &&
 					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange + quickBoostRange, ParryAngle, modifiedScope)
-					    ) {
+					   ) {
 						parryingProjectiles.Add(projectile.whoAmI);
 						stylePlayer.CheckQuickDraw();
 					}
@@ -223,24 +223,24 @@ namespace NullandVoid.Common.Players
 					if ((projectile.Center.X - Player.Center.X) * Player.direction > 0 &&
 					    projectile.Center.DistanceSQ(Player.Center) <= parryRange * parryRange &&
 					    projectile.Hitbox.IntersectsConeFastInaccurate(Player.Center, parryRange, ParryAngle, modifiedScope)
-					    ) {
+					   ) {
 						parryingProjectiles.Add(projectile.whoAmI);
 						stylePlayer.CheckQuickDraw();
 					}
 				}
 			}
-			
+
 			foreach (NPC npc in Main.ActiveNPCs) {
 				if (
 					!npc.friendly &&
 					npc.damage != 0 &&
 					!ParriedNPCs.Contains(npc.whoAmI) &&
-				    (
-					    (npc.Hitbox.ClosestPointInRect(Player.Center).DistanceSQ(Player.Center) <= modifiedRange * modifiedRange &&
-						npc.Hitbox.IntersectsConeFastInaccurate(Player.Center, modifiedRange, ParryAngle, parryScope * 0.1f)) ||
-					    npc.Hitbox.Contains(Player.Center.ToPoint())
-					    )
-				    ) {
+					(
+						(npc.Hitbox.ClosestPointInRect(Player.Center).DistanceSQ(Player.Center) <= modifiedRange * modifiedRange &&
+						 npc.Hitbox.IntersectsConeFastInaccurate(Player.Center, modifiedRange, ParryAngle, parryScope * 0.1f)) ||
+						npc.Hitbox.Contains(Player.Center.ToPoint())
+					)
+				) {
 					parryingNPCs.Add(npc.whoAmI);
 				}
 			}
@@ -253,16 +253,16 @@ namespace NullandVoid.Common.Players
 			int parriedDamage = 0;
 			int tempProjectileBoostCount = 0;
 			int specialProjectileCount = 0;
-				
+
 			foreach (int i in parryingProjectiles) {
 				ParriedProjectiles.Add(i);
-				Projectile projectile =  Main.projectile[i];
+				Projectile projectile = Main.projectile[i];
 				bool isBoost = false;
 				if (projectile.hostile) {
 					projectile.hostile = false;
 					projectile.friendly = true;
 					projectile.velocity *= -1;
-					parriedDamage += NullandVoidUtils.EstimateDamage(projectile);
+					parriedDamage += NullandVoidUtils.EstimateDamage(Player, projectile);
 				}
 				else {
 					projectileBoostCount++;
@@ -279,13 +279,14 @@ namespace NullandVoid.Common.Players
 						else {
 							projectile.velocity = (projectile.Center - Player.Center).SafeNormalize(Vector2.One) * new Vector2(12, 12);
 						}
+
 						continue;
 					}
 				}
-				
+
 				projectile.knockBack *= 1.5f;
 				if (Math.Abs(projectile.Center.X - Player.Center.X / 8) < 3) {
-					projectile.velocity *= Math.Clamp((16 / projectile.velocity.Length()), 1f, 1.75f);
+					projectile.velocity *= Math.Clamp(16 / projectile.velocity.Length(), 1f, 1.75f);
 				}
 				else {
 					projectile.velocity.X += Math.Clamp((projectile.Center.X - Player.Center.X) / 8, -3, 3);
@@ -294,8 +295,9 @@ namespace NullandVoid.Common.Players
 				if (Math.Abs(projectile.velocity.Length()) < Math.Abs(projectile.Center.Y - Player.Center.Y - projectile.velocity.Y)) {
 					projectile.velocity.Y = MathHelper.Clamp(projectile.Center.Y - Player.Center.Y, -5, 5);
 				}
+
 				projectile.netUpdate = true;
-				Projectile.NewProjectile(projectile.GetSource_FromThis(), projectile.position, Vector2.Zero, ModContent.ProjectileType<ParryExplosion>(), projectile.damage, projectile.knockBack, 0, projectile.identity,  ParryExplosionRange, isBoost? -Player.whoAmI : Player.whoAmI);
+				Projectile.NewProjectile(projectile.GetSource_FromThis(), projectile.position, Vector2.Zero, ModContent.ProjectileType<ParryExplosion>(), projectile.damage, projectile.knockBack, 0, projectile.identity, ParryExplosionRange, isBoost ? -Player.whoAmI : Player.whoAmI);
 
 				knockbackVelocity = projectile.velocity.SafeNormalize(Vector2.Zero);
 				Player.velocity.X -= knockbackVelocity.X * 5 / ParriedProjectiles.Count;
@@ -308,15 +310,15 @@ namespace NullandVoid.Common.Players
 				NPC npc = Main.npc[i];
 				Vector2 approachVelocity = Player.velocity - npc.velocity;
 				npc.PlayerInteraction(Player.whoAmI);
-				npc.SimpleStrikeNPC(SwordParry? npc.damage / 2 : npc.damage, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5, DamageClass.Melee);
+				npc.SimpleStrikeNPC(SwordParry ? npc.damage / 2 : npc.damage, Player.direction, false, MathF.Sqrt(approachVelocity.Length() + 10) + 5, DamageClass.Melee);
 				if (!npc.active) {
 					Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.Kill);
 				}
-				
-				parriedDamage += NullandVoidUtils.EstimateDamage(npc);
+
+				parriedDamage += NullandVoidUtils.EstimateDamage(Player, npc);
 				knockbackVelocity = approachVelocity.SafeNormalize(Vector2.Zero);
 				Player.velocity -= knockbackVelocity * approachVelocity.Length() * (1 - npc.knockBackResist);
-				
+
 				if (npc.boss) {
 					SwordParryIFrame = 20;
 				}
@@ -326,30 +328,33 @@ namespace NullandVoid.Common.Players
 			if (ParryDirection == -1) {
 				ParryAngle -= MathHelper.Pi;
 			}
+
 			ParryFrame = 20;
 			int parryCount = ParriedProjectiles.Count + ParriedNPCs.Count;
-			
-			int parryHeal = (int)((parriedDamage / parryCount) * (0.5f + ((float)Player.GetModPlayer<StylePlayer>().PlayerStyleRank.Rank / 8)));
+
+			int parryHeal = (int)(parriedDamage / parryCount * (0.5f + (float)Player.GetModPlayer<StylePlayer>().PlayerStyleRank.Rank / 8));
 			if (SwordParry) {
 				parryHeal /= 2;
 			}
+
 			if (parryHeal != 0) {
 				Player.Heal(parryHeal);
 			}
-			
+
 			Player.fallStart = Player.position.ToTileCoordinates().Y;
-			
+
 			int tempParryCount = parryingProjectiles.Count + parryingNPCs.Count - tempProjectileBoostCount;
 			StylePlayer stylePlayer = Player.GetModPlayer<StylePlayer>();
 			if (tempParryCount != 0) {
 				stylePlayer.AddStyleBonus(StyleBonus.Parry, tempParryCount);
 			}
+
 			if (projectileBoostCount - specialProjectileCount > 0) {
 				stylePlayer.AddStyleBonus(StyleBonus.ProjectileBoost, tempProjectileBoostCount - specialProjectileCount);
 			}
 
 			ParryEffects(Player.whoAmI, parryCount, SwordParry);
-			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);			
+			NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 		}
 	}
 }

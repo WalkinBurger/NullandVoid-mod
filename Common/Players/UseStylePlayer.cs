@@ -7,7 +7,7 @@ namespace NullandVoid.Common.Players
 	public class UseStylePlayer : ModPlayer
 	{
 		public int HitStyle;
-		public float[] HitAngleRange =  new float[2];
+		public float[] HitAngleRange = new float[2];
 		public int HitResetTimer;
 		public int HitDirection;
 
@@ -18,21 +18,23 @@ namespace NullandVoid.Common.Players
 			if (HitResetTimer <= 0) {
 				return;
 			}
+
 			HitResetTimer--;
 			if (HitResetTimer == 0) {
 				HitStyle = 0;
 			}
 		}
-		
+
 		public void SetHit(int whoAmI, float hitAngle, int style) {
 			Player player = Main.player[whoAmI];
 			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
-			
+
 			useStylePlayer.HitStyle = style;
 			useStylePlayer.HitDirection = -Math.Sign(hitAngle);
 			if (useStylePlayer.HitDirection == 0) {
 				useStylePlayer.HitDirection = player.direction;
 			}
+
 			float offsetAngle = 1.4f * useStylePlayer.HitDirection;
 			switch (style) {
 				case 0:
@@ -47,9 +49,9 @@ namespace NullandVoid.Common.Players
 					useStylePlayer.HitAngleRange = [hitAngle + offsetAngle, hitAngle - offsetAngle];
 					break;
 			}
+
 			useStylePlayer.HitAngleRange[0] = useStylePlayer.HitDirection == 1 ? Math.Clamp(useStylePlayer.HitAngleRange[0], -4, 1) : Math.Clamp(useStylePlayer.HitAngleRange[0], -1, 4);
 			useStylePlayer.HitAngleRange[1] = useStylePlayer.HitDirection == 1 ? Math.Clamp(useStylePlayer.HitAngleRange[1], -4, 1) : Math.Clamp(useStylePlayer.HitAngleRange[1], -1, 4);
-			
 		}
 	}
 }

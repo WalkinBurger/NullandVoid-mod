@@ -2,65 +2,57 @@
 
 # ==================== Common ====================
 Common: {
-	MovementAcc: "[c/888888:Hold <{0}> for more info]"
+	KeybindNotSet: <KeybindNotSet>
+	MovementAcc:
+		'''
+		 class accessory
+		[c/888888:Hold <shift> for more info]
+		'''
 	DasherAcc:
 		'''
-		{$MovementClass.Dasher} class accessory
-		{$Common.MovementAcc}
-		[c/999999:Uses {1} stamina]   
+		[c/999999:<ability> to dash ({0} stamina)]
+		[c/999999:<altAbility> to long dash ({1} stamina)]
 		[c/999999:{2} {^2:second;seconds} of dash time]
-		[c/999999:{3} dash speed]
+		[c/999999:Dash speed: {3}]
 		[c/999999:{4} {^4:second;seconds} of invincibility]
 		'''
 	ChargerAcc:
 		'''
-		{$MovementClass.Charger} class accessory
-		{$Common.MovementAcc}
-		[c/999999:Uses {1} stamina per second]
-		[c/999999:{2} max speed]
-		[c/999999:{3} charge acceleration]
-		[c/999999:{4} turn acceleration]
+		[c/999999:<ability> to charge ({0} stamina per second)]
+		[c/999999:<altAbility> to slam ({1} stamina per second)]
+		[c/999999:Max speed: {2}]
+		[c/999999:Charge acceleration: {3}]
+		[c/999999:Turn acceleration: {4}]
 		[c/999999:{5}% damage reduction at max speed]
 		[c/999999:{6} impact damage at max speed]
 		'''
 	SpiritAcc:
 		'''
-		{$MovementClass.Spirit} class accessory
-		{$Common.MovementAcc}
-		[c/999999:Uses {1} stamina per second]
-		[c/999999:{2} distance decay rate]
-		[c/999999:{3} damage cost]
-		[c/999999:{4} spirit speed]
-		[c/999999:{5} fling speed]
+		[c/999999:<ability> to enter spirit form ({0} stamina per second)]
+		[c/999999:<altAbility> to fling]
+		[c/999999:Distance decay rate: {1}]
+		[c/999999:Damage absorption: {2}%]
+		[c/999999:{3}% increased speed in spirit form]
+		[c/999999:Fling speed: {4}]
 		'''
 	GrapplerAcc:
 		'''
-		{$MovementClass.Spirit} class accessory
-		{$Common.MovementAcc}
-		[c/999999:Uses {1} stamina per second]
-		[c/999999:{2} range]
-		[c/999999:{3} pull speed on enemies]
-		[c/999999:{4} reel speed on player]
+		[c/999999:<ability> to grapple ({0} stamina per second)]
+		[c/999999:<altAbility> to pull/reel ({1} stamina per second)]
+		[c/999999:Range: {2}]
+		[c/999999:Pull speed on enemies: {3}]
+		[c/999999:Reel speed on player: {4}]
 		'''
 }
 
 # ==================== Items ====================
 Items: {
-	TestSword: {
-		DisplayName: Test Sword
-		Tooltip:
-			'''
-			Template of an item
-			Replacing this tooltip is duty 
-			It's snowing on Mt.Fuji
-			'''
-	}
-
 	WoodenShield: {
 		DisplayName: Wooden Shield
 		Tooltip:
 			'''
 			A primitive shield that grants the wearer a short dash
+			{$MovementClass.Dasher}{$Common.MovementAcc}
 			{$Common.DasherAcc}
 			'''
 	}
@@ -69,8 +61,30 @@ Items: {
 		DisplayName: Wooden Gauntlets
 		Tooltip:
 			'''
-			Allows for a short charge
+			Allows for a short charge and slam
+			{$MovementClass.Charger}{$Common.MovementAcc}
 			{$Common.ChargerAcc}
+			'''
+	}
+
+	SlimeAtomizer: {
+		DisplayName: Slime Atomizer
+		Tooltip:
+			'''
+			"Gone, reduced to slime"
+			{$MovementClass.Spirit}{$Common.MovementAcc}
+			{$Common.SpiritAcc}
+			[c/999999:100% increased jump height in spirit form]
+			'''
+	}
+
+	WoodenGrapple: {
+		DisplayName: Wooden Grapple
+		Tooltip:
+			'''
+			"It don't mean a thing if it ain't got that swing!"
+			{$MovementClass.Grappler}{$Common.MovementAcc}
+			{$Common.GrapplerAcc}
 			'''
 	}
 }
@@ -79,7 +93,7 @@ Items: {
 Keybinds: {
 	Parry.DisplayName: Parry
 	MovementAbility.DisplayName: Movement Ability
-	MovementAltAility.DisplayName: Movement Alt Aility
+	MovementAltAility.DisplayName: Movement Alt Ability
 }
 
 # ==================== Buffs ====================
@@ -98,7 +112,7 @@ Configs: {
 		Headers: {
 			Parrying: Parrying
 			StyleMeter: Style Meter
-			Stamina: Stamina
+			Movement: Movement
 			Blood: Blood
 			Misc: Miscellaneous
 		}
@@ -150,7 +164,7 @@ Configs: {
 
 		StaminaSoundVolume: {
 			Label: Stamina sound volume
-			Tooltip: Volume of the refilling & long dash sound
+			Tooltip: Volume of the stamina refilling sound effect
 		}
 
 		ShowStyleMeterUI: {
@@ -179,8 +193,38 @@ Configs: {
 		}
 
 		CameraShakeIntensity: {
-			Label: Camera Shake Intensity
+			Label: Camera shake intensity
 			Tooltip: Intensity of the camera shake for miscellaneous visual effects. (0 to disable)
+		}
+
+		PogoVolume: {
+			Label: Pogo volume
+			Tooltip: ""
+		}
+
+		DashAbilitiesVolume: {
+			Label: Dash abilities volume
+			Tooltip: ""
+		}
+
+		ChargeAbilitiesVolume: {
+			Label: Charge abilities volume
+			Tooltip: ""
+		}
+
+		SpiritAbilitiesVolume: {
+			Label: Spirit abilities volume
+			Tooltip: ""
+		}
+
+		GrappleAbilitiesVolume: {
+			Label: Grapple abilities volume
+			Tooltip: ""
+		}
+
+		GeneralDustAmount: {
+			Label: General dust amount
+			Tooltip: The amount of dust that renders for miscellaneous visual effects (0 to disable)
 		}
 	}
 
@@ -196,6 +240,7 @@ Projectiles: {
 	ParryExplosion.DisplayName: Parry Explosion
 	SpecialParryProjectile.DisplayName: Special Parry Projectile
 	SimpleExplosion.DisplayName: Simple Explosion
+	WoodenGrappleProjectile.DisplayName: Wooden Grapple Projectile
 }
 
 # ==================== Styles ====================
@@ -211,7 +256,7 @@ Style: {
 	}
 
 	Bonuses: {
-	    FeatherFalling: FEATHER FALLING
+		FeatherFalling: FEATHER FALLING
 		LongLunge: LONG LUNGE
 		MultiKill: MULTIKILL
 		Parry: PARRY
@@ -221,6 +266,7 @@ Style: {
 		ProjectileBoost: PROJECTILE BOOST
 		QuickDraw: QUICK DRAW
 		RobinHood: ROBIN HOOD
+		Slammed: SLAMMED
 		Uppercut: UPPERCUT
 		Kill: KILL
 		Lunge: LUNGE

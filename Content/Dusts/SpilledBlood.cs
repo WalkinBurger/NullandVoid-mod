@@ -19,9 +19,10 @@ namespace NullandVoid.Content.Dusts
 			if (ModContent.GetInstance<NullandVoidClientConfig>().ShowBloodTrail) {
 				dust.customData = new Queue<Vector2>(4);
 			}
+
 			dust.noLight = true;
 		}
-		
+
 		public override bool PreDraw(Dust dust) {
 			if (dust.customData is not Queue<Vector2> trail) {
 				return true;
@@ -33,6 +34,7 @@ namespace NullandVoid.Content.Dusts
 				Main.EntitySpriteDraw(TextureAssets.MagicPixel.Value, pos - Main.screenPosition, new Rectangle(0, 0, 8, 8), lightColor, dust.rotation + i, new Vector2(4f, 4f), dust.scale - (float)i / 16, SpriteEffects.None);
 				i--;
 			}
+
 			return true;
 		}
 
@@ -40,9 +42,11 @@ namespace NullandVoid.Content.Dusts
 			if (dust.customData is not Queue<Vector2> trail) {
 				return true;
 			}
+
 			if (trail.Count == 4) {
 				trail.Dequeue();
 			}
+
 			trail.Enqueue(dust.position - dust.velocity);
 			return true;
 		}

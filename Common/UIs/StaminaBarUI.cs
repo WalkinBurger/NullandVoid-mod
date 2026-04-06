@@ -11,19 +11,23 @@ namespace NullandVoid.Common.UIs
 {
 	internal class StaminaBarUI : UIState
 	{
-		private static Asset<Texture2D> barEmpty;
+		private static Asset<Texture2D> bar;
 		private static Asset<Texture2D> barFull;
+		private static Asset<Texture2D> barUsing;
+		private static Asset<Texture2D> barUsingFull;
 		private Rectangle areaRect;
 		private UIElement area;
-		
+
 		public override void OnInitialize() {
 			area = new UIElement();
 			area.Left.Set(-450, 1);
 			area.Top.Set(15, 0);
 
-			barEmpty = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar", AssetRequestMode.ImmediateLoad);
+			bar = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBar", AssetRequestMode.ImmediateLoad);
 			barFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarFull", AssetRequestMode.ImmediateLoad);
-			
+			barUsing = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarUsing", AssetRequestMode.ImmediateLoad);
+			barUsingFull = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StaminaBarUsingFull", AssetRequestMode.ImmediateLoad);
+
 			Append(area);
 		}
 
@@ -31,31 +35,39 @@ namespace NullandVoid.Common.UIs
 			if (!ModContent.GetInstance<NullandVoidClientConfig>().ShowStaminaUI) {
 				return;
 			}
-			
+
 			base.Draw(spriteBatch);
-			
+
 			areaRect = area.GetInnerDimensions().ToRectangle();
 			MovementClassPlayer movementClassPlayer = Main.LocalPlayer.GetModPlayer<MovementClassPlayer>();
 			float staminaRatio = (float)movementClassPlayer.StatStamina / 20;
-			int staminaBars = movementClassPlayer.StatStaminaMax / 20;
-			for (int i = 0; i < staminaBars; i++) {
-				Vector2 barOrigin = new(areaRect.Left - i * 50, areaRect.Top);
-				spriteBatch.Draw(barEmpty.Value, barOrigin, Color.White);
-
-				if (staminaRatio <= i) {
-					continue;
+			bool ability = movementClassPlayer.UsingAbility || movementClassPlayer.Cooldown > 0;
+			bool altAbility = movementClassPlayer.UsingAltAbility || movementClassPlayer.CooldownAlt > 0;
+			int halfHeight = (bar.Height() / 2) + 1;
+			for (int i = 0; i < movementClassPlayer.StatStaminaMax / 20; i++) {
+				Vector2 origin = new(areaRect.Left - i * 42, areaRect.Top);
+				if (staminaRatio >= i + 1) {
+					spriteBatch.Draw(altAbility ? barUsingFull.Value : barFull.Value, origin, Color.White);
+					if (ability != altAbility) {
+						spriteBatch.Draw(ability ? barUsingFull.Value : barFull.Value, origin, new Rectangle(0, 0, bar.Width(), halfHeight), Color.White);
+					}
 				}
-				
-				int barFill = (int)(barEmpty.Width() * (1 - (staminaRatio - i)));
-				Color barColor = Color.White;
-				barColor.A = barColor.R = barColor.G = barColor.B = staminaRatio - i >= 1f ? (byte)255 : (byte)128;
+				else {
+					spriteBatch.Draw(altAbility ? barUsing.Value : bar.Value, origin, new Color(128, 128, 128));
+					if (ability != altAbility) {
+						spriteBatch.Draw(ability ? barUsing.Value : bar.Value, origin, new Rectangle(0, 0, bar.Width(), halfHeight), new Color(128, 128, 128));
+					}
 
-				spriteBatch.Draw(
-					barFull.Value,
-					new Vector2(barOrigin.X + barFill, barOrigin.Y),
-					new Rectangle(barFill, 0, barEmpty.Width() - barFill, barEmpty.Height()),
-					barColor
-				);
+					if (!(staminaRatio >= i)) {
+						continue;
+					}
+
+					int fillRatio = (int)(bar.Width() * (1 - (staminaRatio - i)));
+					spriteBatch.Draw(altAbility ? barUsingFull.Value : barFull.Value, origin + new Vector2(fillRatio, 0), new Rectangle(fillRatio, 0, bar.Width() - fillRatio, bar.Height()), new Color(196, 196, 196));
+					if (ability != altAbility) {
+						spriteBatch.Draw(ability ? barUsingFull.Value : barFull.Value, origin + new Vector2(fillRatio, 0), new Rectangle(fillRatio, 0, bar.Width() - fillRatio, halfHeight), new Color(196, 196, 196));
+					}
+				}
 			}
 		}
 	}
@@ -76,7 +88,7 @@ namespace NullandVoid.Common.UIs
 			StaminaBarUI = null;
 			StaminaBarUserInterface = null;
 		}
-		
+
 		public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers) {
 			int mouseTextIndex = layers.FindIndex(layer => layer.Name.Equals("Vanilla: Resource Bars"));
 			if (mouseTextIndex != -1) {

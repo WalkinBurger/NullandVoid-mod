@@ -20,7 +20,7 @@ namespace NullandVoid.Content.Projectiles
 			Projectile.friendly = true;
 			Projectile.alpha = 255;
 		}
-		
+
 		public override bool PreDraw(ref Color lightColor) {
 			return false;
 		}
@@ -34,6 +34,7 @@ namespace NullandVoid.Content.Projectiles
 			if (Projectile.timeLeft < 10) {
 				return;
 			}
+
 			Projectile parent = Main.projectile.FirstOrDefault(x => x.identity == (int)Projectile.ai[0]);
 			if (parent.numHits == 0 && parent.timeLeft > 1) {
 				Projectile.timeLeft = parent.timeLeft;
@@ -51,26 +52,27 @@ namespace NullandVoid.Content.Projectiles
 			if (player != Main.LocalPlayer) {
 				return;
 			}
+
 			if (!target.active && Math.Sign(Projectile.ai[2]) == 1) {
 				player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.FriendlyFire);
 			}
 		}
-		
+
 		public void Explode() {
 			Projectile.Resize((int)Projectile.ai[1], (int)Projectile.ai[1]);
 			Projectile.timeLeft = 10;
 			if (Main.dedServ) {
 				return;
 			}
-			
+
 			SoundEngine.PlaySound(SoundID.Item38 with { Volume = 0.3f, PitchVariance = 0.2f, MaxInstances = 8 }, Projectile.position);
 			SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.3f, PitchVariance = 0.2f, MaxInstances = 8 }, Projectile.position);
 			int dustRange = (int)(Projectile.ai[1] / 2);
 			Vector2 dustPosition = Projectile.Center - new Vector2(dustRange / 2, dustRange / 2);
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < 14 * ModContent.GetInstance<NullandVoidClientConfig>().GeneralDustAmount; i++) {
 				Dust dust = Dust.NewDustDirect(dustPosition, dustRange, dustRange, DustID.GemTopaz, 0f, 0f, 192);
 				dust.noGravity = true;
-				
+
 				dust = Dust.NewDustDirect(dustPosition, dustRange, dustRange, DustID.Torch, 0f, 0f, 0, default, 3f);
 				dust.noGravity = true;
 				dust.velocity *= 5f;

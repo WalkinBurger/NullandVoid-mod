@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using NullandVoid.Utils;
 using Terraria;
-using Terraria.DataStructures;
 using Terraria.ModLoader;
 
 namespace NullandVoid.Content.Projectiles
@@ -16,14 +14,14 @@ namespace NullandVoid.Content.Projectiles
 		public override void SetDefaults() {
 			Projectile.width = Projectile.height = 128;
 		}
-		
+
 		public override void AI() {
 			if (Projectile.timeLeft > Projectile.ai[0]) {
 				Projectile.timeLeft = (int)Projectile.ai[0];
 			}
-			
+
 			Player player = Main.player[Projectile.owner];
-			
+
 			Projectile.Center = new Vector2(player.Bottom.X, player.Bottom.Y + 2);
 			float t = NullandVoidUtils.EaseInPow(Projectile.timeLeft / Projectile.ai[0], 3);
 			Projectile.rotation = t;

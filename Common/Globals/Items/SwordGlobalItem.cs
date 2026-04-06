@@ -34,25 +34,26 @@ namespace NullandVoid.Common.Globals.Items
 				useStylePlayer.HitResetTimer = player.itemAnimationMax * 2;
 				int style = (useStylePlayer.HitStyle + 1) % 3;
 				float hitAngle = NullandVoidUtils.MouseAngle(Main.MouseScreen, Main.ScreenSize, true);
-				
+
 				Projectile.NewProjectile(player.GetSource_ItemUse(item), player.MountedCenter, Vector2.Zero, ModContent.ProjectileType<SwordSlashProjectile>(), 0, 0, Main.myPlayer, player.itemAnimationMax);
 				player.GetModPlayer<ParryPlayer>().DoParry(true, 6);
-					
+
 				MovementMiscPlayer movementMiscPlayer = player.GetModPlayer<MovementMiscPlayer>();
 				useStylePlayer.SetHit(player.whoAmI, hitAngle, style);
 				if (movementMiscPlayer.CanPogo(PogoTypes.Sword)) {
-					movementMiscPlayer.Pogo(useStylePlayer.HitStyle == 0? 16 : 12);
+					movementMiscPlayer.Pogo(useStylePlayer.HitStyle == 0 ? 16 : 12);
 				}
+
 				if (Main.netMode != NetmodeID.SinglePlayer) {
 					NullandVoidNetwork.SendSwordMessage(player.whoAmI, hitAngle, style);
 				}
 			}
 
-			
+
 			player.ChangeDir(useStylePlayer.HitDirection);
 			player.itemTime = player.itemAnimation;
 
-			float hitProgress = 1 - ((float)player.itemAnimation / player.itemAnimationMax);
+			float hitProgress = 1 - (float)player.itemAnimation / player.itemAnimationMax;
 			float swingAngle = MathHelper.Lerp(useStylePlayer.HitAngleRange[0], useStylePlayer.HitAngleRange[1], NullandVoidUtils.OutElastic(hitProgress));
 			player.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, swingAngle);
 			player.itemLocation = player.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, player.compositeFrontArm.rotation);
@@ -80,13 +81,13 @@ namespace NullandVoid.Common.Globals.Items
 
 		public override void UseItemHitbox(Item item, Player player, ref Rectangle hitbox, ref bool noHitbox) {
 			UseStylePlayer useStylePlayer = player.GetModPlayer<UseStylePlayer>();
-			
+
 			Vector2 handPostion = player.GetFrontHandPosition(Player.CompositeArmStretchAmount.Full, player.compositeFrontArm.rotation);
-			float x = NullandVoidUtils.OutElastic(1 - ((float)player.itemAnimation / player.itemAnimationMax));
-			float size = (hitbox.Width + hitbox.Height) * (MathF.Sin(x * MathHelper.Pi) * 0.65f + (float)(((useStylePlayer.HitStyle + 2) % 3) + 1) / 4);
+			float x = NullandVoidUtils.OutElastic(1 - (float)player.itemAnimation / player.itemAnimationMax);
+			float size = (hitbox.Width + hitbox.Height) * (MathF.Sin(x * MathHelper.Pi) * 0.65f + (float)((useStylePlayer.HitStyle + 2) % 3 + 1) / 4);
 			Vector2 tipPosition = handPostion - new Vector2(size * MathF.Sin(player.compositeFrontArm.rotation), size * -MathF.Cos(player.compositeFrontArm.rotation));
 			hitbox = Terraria.Utils.CornerRectangle(handPostion, tipPosition);
-			
+
 			// funny dust spam hitbox debug
 			// for (int i = 0; i < 10; i++) {
 			//  	Dust dust = Dust.NewDustDirect(new Vector2(MathHelper.Lerp(hitbox.BottomLeft().X, hitbox.BottomRight().X, (float)i / 10), MathHelper.Lerp(hitbox.BottomLeft().Y, hitbox.BottomRight().Y, (float)i / 10)), 1 ,1, DustID.Flare, 0f, 0f);

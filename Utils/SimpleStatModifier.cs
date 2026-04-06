@@ -1,10 +1,8 @@
-using Terraria;
-
 namespace NullandVoid.Utils
 {
-	public struct SimpleStatModifier(float flat, float additive= 1)
+	public struct SimpleStatModifier(float flat, float additive = 1)
 	{
-		public static readonly SimpleStatModifier Default = new SimpleStatModifier(0, 1);
+		public static readonly SimpleStatModifier Default = new(0);
 		public float Flat = flat;
 		public float Additive = additive;
 

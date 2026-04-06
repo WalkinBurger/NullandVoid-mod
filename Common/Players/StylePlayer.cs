@@ -4,11 +4,9 @@ using System.Linq;
 using Microsoft.Xna.Framework;
 using NullandVoid.Common.Globals.Items;
 using NullandVoid.Core;
-using NullandVoid.Utils;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
-using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace NullandVoid.Common.Players
@@ -19,8 +17,8 @@ namespace NullandVoid.Common.Players
 		public int Count { get; set; } = count;
 		public int TimeAlive { get; set; }
 	}
-	
-	
+
+
 	public class StylePlayer : ModPlayer
 	{
 		public int StylePoints;
@@ -36,10 +34,10 @@ namespace NullandVoid.Common.Players
 		public bool ResetFreshnessNext;
 		public float FreshnessDecayRate;
 		private int freshnessTimer;
-		
+
 		public bool Lunging;
 		public int QuickDrawWindow;
-		
+
 
 		public override void ResetEffects() {
 			Lunging = false;
@@ -55,15 +53,25 @@ namespace NullandVoid.Common.Players
 
 
 		public void UpdateStyleRank() {
+			if (Player.whoAmI != Main.myPlayer) {
+				return;
+			}
+			
 			if (StylePoints < PlayerStyleRank.LowerBound && PlayerStyleRank != StyleRank.Dull) {
 				PlayerStyleRank = StyleRank.List[PlayerStyleRank.Rank - 1];
 				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
 				styleLoseRate = PlayerStyleRank.LoseRate;
+				if (Main.netMode == NetmodeID.MultiplayerClient) {
+					NullandVoidNetwork.SendStyleRankMessage(Player.whoAmI, PlayerStyleRank.Rank);
+				}
 			}
 			else if (PlayerStyleRank != StyleRank.Null && StylePoints >= PlayerStyleRank.UpperBound) {
 				PlayerStyleRank = StyleRank.List[PlayerStyleRank.Rank + 1];
 				styleLoseThreshold = PlayerStyleRank.LoseThresholdFrame;
 				styleLoseRate = PlayerStyleRank.LoseRate;
+				if (Main.netMode == NetmodeID.MultiplayerClient) {
+					NullandVoidNetwork.SendStyleRankMessage(Player.whoAmI, PlayerStyleRank.Rank);
+				}
 			}
 		}
 
@@ -82,7 +90,7 @@ namespace NullandVoid.Common.Players
 			int calcPoints = (int)(rawPoints * (WeaponFreshness + 0.25f) * (1 + MathF.Log10(count) * weight));
 			StylePoints += calcPoints;
 			if (ResetFreshnessNext) {
-				WeaponFreshness += 0.25f;
+				WeaponFreshness = Math.Min(WeaponFreshness + 0.25f, 1);
 				ResetFreshnessNext = false;
 			}
 			else if (WeaponFreshness > 0) {
@@ -90,6 +98,7 @@ namespace NullandVoid.Common.Players
 				WeaponFreshness = Math.Max(WeaponFreshness, 0);
 				freshnessTimer = 0;
 			}
+
 			if (Main.CurrentFrameFlags.AnyActiveBossNPC) {
 				ScorePoints += calcPoints;
 			}
@@ -102,19 +111,26 @@ namespace NullandVoid.Common.Players
 				ScorePoints -= points * count;
 			}
 		}
-		
+
 		public void AddStyleBonus(StyleBonus bonusType, int count = 1) {
+			if (Player.whoAmI != Main.myPlayer) {
+				return;
+			}
+			
 			if (bonusType.Tier == -1) {
 				if (bonusType.Points != 0) {
 					CalcMinusPoints(bonusType.Points, count);
 				}
+
 				foreach (PlayerStyleBonus styleBonus in PlayerStyleBonuses.Where(styleBonus => styleBonus.BonusType == bonusType)) {
 					styleBonus.Count += count;
 					return;
 				}
+
 				PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType, count));
 				return;
 			}
+
 			if (bonusType.StackVariant == null) {
 				int bonusStackCount = count;
 				foreach (PlayerStyleBonus styleBonus in PlayerStyleBonuses.Where(styleBonus => styleBonus.BonusType == bonusType)) {
@@ -122,40 +138,47 @@ namespace NullandVoid.Common.Players
 					if (styleBonus.TimeAlive > 30) {
 						continue;
 					}
+
 					styleBonus.Count += count;
 					CalcAddPoints(bonusType.Points, bonusStackCount, bonusType.StackPointsWeight);
 					return;
 				}
+
 				PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType, count));
 				CalcAddPoints(bonusType.Points, bonusStackCount, bonusType.StackPointsWeight);
 				return;
 			}
+
 			for (int i = 0; i < PlayerStyleBonuses.Count; i++) {
 				PlayerStyleBonus styleBonus = PlayerStyleBonuses[i];
 				if (styleBonus.TimeAlive > 30) {
 					continue;
 				}
+
 				if (styleBonus.BonusType == bonusType) {
 					PlayerStyleBonuses.RemoveAt(i);
 					PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType.StackVariant, count + 1));
 					CalcAddPoints(bonusType.StackVariant.Points, count + 1, bonusType.StackVariant.StackPointsWeight);
 					return;
 				}
+
 				if (styleBonus.BonusType == bonusType.StackVariant) {
 					styleBonus.Count += count;
 					CalcAddPoints(bonusType.StackVariant.Points, styleBonus.Count, bonusType.StackVariant.StackPointsWeight);
 					return;
 				}
 			}
+
 			if (count == 1) {
 				PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType));
 				CalcAddPoints(bonusType.Points, 1, bonusType.StackPointsWeight);
 				return;
 			}
+
 			PlayerStyleBonuses.Add(new PlayerStyleBonus(bonusType.StackVariant, count));
 			CalcAddPoints(bonusType.StackVariant.Points, count, bonusType.StackVariant.StackPointsWeight);
 		}
-		
+
 
 		public override void UpdateLifeRegen() {
 			Player.lifeRegen += PlayerStyleRank.Rank * 2;
@@ -164,6 +187,11 @@ namespace NullandVoid.Common.Players
 
 		public override void PostUpdateMiscEffects() {
 			Player.GetDamage(DamageClass.Generic) += (float)(PlayerStyleRank.Rank - 2) / 8;
+			
+			if (Player.whoAmI != Main.myPlayer) {
+				return;
+			}
+			
 			freshnessTimer++;
 			styleTimer++;
 			if (styleTimer >= styleLoseThreshold && StylePoints != 0) {
@@ -171,6 +199,7 @@ namespace NullandVoid.Common.Players
 				styleTimer = 0;
 				UpdateStyleRank();
 			}
+
 			UpdateStyleBonuses();
 
 			if (freshnessTimer >= 15) {
@@ -194,23 +223,24 @@ namespace NullandVoid.Common.Players
 				QuickDrawWindow = 0;
 			}
 		}
-		
+
 		public void CheckQuickDraw() {
 			if (QuickDrawWindow != 0) {
 				AddStyleBonus(StyleBonus.QuickDraw);
 				QuickDrawWindow = 0;
 			}
 		}
-		
+
 		public override void OnHitNPC(NPC target, NPC.HitInfo hit, int damageDone) {
 			if (!target.active) {
 				bool airKill = true;
 				for (int i = 0; i < 2; i++) {
-					if (WorldGen.SolidTile2( Framing.GetTileSafely(target.Bottom.ToTileCoordinates() + new Point(0, i)))) {
+					if (WorldGen.SolidTile2(Framing.GetTileSafely(target.Bottom.ToTileCoordinates() + new Point(0, i)))) {
 						airKill = false;
 						break;
 					}
 				}
+
 				if (airKill) {
 					if (Player.HeldItem.useStyle == SwordGlobalItem.SwordUseStyle) {
 						AddStyleBonus(StyleBonus.Uppercut);
@@ -223,9 +253,10 @@ namespace NullandVoid.Common.Players
 				if (damageDone > target.lifeMax) {
 					AddStyleBonus(StyleBonus.Overkill);
 				}
+
 				AddStyleBonus(StyleBonus.Kill);
 			}
-			
+
 			if (Lunging && hit.DamageType == DamageClass.Melee) {
 				Lunging = false;
 				SoundEngine.PlaySound(SoundID.DD2_MonkStaffGroundMiss with { Volume = 0.75f, Pitch = 0.5f, MaxInstances = 8 }, Player.Center);

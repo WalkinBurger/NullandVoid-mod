@@ -1,18 +1,14 @@
-using System;
-using System.Collections.Generic;
-using NullandVoid.Common.Players;
 using NullandVoid.Core;
 using Terraria;
 using Terraria.ID;
-using Terraria.Localization;
-using Terraria.ModLoader;
 
 namespace NullandVoid.Content.Items.Accessories
 {
-	public class WoodenGauntlets : Charger
+	public class WoodenGauntlets : ChargerAcc
 	{
-		public override int MovementType => MovementClassID.Charger;
+		public override int AbilityType => (int)ChargerType.Normal;
 		public override int StaminaCost => 20;
+		public override int StaminaCostAlt => 20;
 		public override bool HasLayer => true;
 		public override float MaxSpeed => 10;
 		public override float ChargeAccel => 2;
@@ -27,6 +23,13 @@ namespace NullandVoid.Content.Items.Accessories
 			Item.value = 30;
 			Item.rare = ItemRarityID.White;
 			Item.defense = 2;
+		}
+
+		public override void AddRecipes() {
+			Recipe recipe = CreateRecipe();
+			recipe.AddRecipeGroup(RecipeGroupID.Wood, 20);
+			recipe.AddTile(TileID.WorkBenches);
+			recipe.Register();
 		}
 	}
 }

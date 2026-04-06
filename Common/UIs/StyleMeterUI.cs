@@ -31,7 +31,7 @@ namespace NullandVoid.Common.UIs
 		private UIText freshnessText;
 		private int idleTime;
 		private int styleVisualFill;
-		
+
 
 		public override void OnInitialize() {
 			idleTime = 600;
@@ -46,17 +46,17 @@ namespace NullandVoid.Common.UIs
 			bgBottom = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundBottom", AssetRequestMode.ImmediateLoad);
 			bgMiddle = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundMiddle", AssetRequestMode.ImmediateLoad);
 			bgTop = ModContent.Request<Texture2D>("NullandVoid/Common/UIs/StyleBackgroundTop", AssetRequestMode.ImmediateLoad);
-			
+
 			area = new UIElement();
-			area.Width.Set(280,0);
-			area.Height.Set(200,0);
+			area.Width.Set(280, 0);
+			area.Height.Set(200, 0);
 			area.Left.Set(-315, 1);
 			area.Top.Set(0, 1);
 
 			styleRankText = new UIText("");
 			styleRankText.Left.Set(0, 0);
 			styleRankText.Top.Set(-35, 1);
-			
+
 			styleRankShadow = new UIText("");
 			styleRankShadow.Left.Set(5, 0);
 			styleRankShadow.Top.Set(-33, 1);
@@ -68,7 +68,7 @@ namespace NullandVoid.Common.UIs
 			freshnessText.Top.Set(-30, 1);
 			freshnessText.TextColor = new Color(240, 142, 57);
 			freshnessText.ShadowColor = new Color(82, 30, 58);
-			
+
 			area.Append(freshnessText);
 			area.Append(styleRankShadow);
 			area.Append(styleRankText);
@@ -79,9 +79,10 @@ namespace NullandVoid.Common.UIs
 			if (Main.playerInventory || !ModContent.GetInstance<NullandVoidClientConfig>().ShowStyleMeterUI) {
 				return;
 			}
+
 			styleRankText.Top.Set(-40, 1);
 			styleRankShadow.Top.Set(-39, 1);
-			
+
 			area.Left.Set(-315, 1);
 			StylePlayer stylePlayer = Main.LocalPlayer.GetModPlayer<StylePlayer>();
 			StyleRank styleRank = stylePlayer.PlayerStyleRank;
@@ -92,13 +93,14 @@ namespace NullandVoid.Common.UIs
 					if (idleTime >= styleMeterHideTime) {
 						return;
 					}
+
 					idleTime++;
 					if (idleTime > styleMeterHideTime - 40) {
 						area.Top.Set((int)MathHelper.Lerp(-215, 0, NullandVoidUtils.EaseInPow((float)(idleTime - styleMeterHideTime + 40) / 40, 3)), 1);
 					}
 				}
 				else if (idleTime > 0) {
-					if ((idleTime > styleMeterHideTime - 39 || idleTime < 21)) {
+					if (idleTime > styleMeterHideTime - 39 || idleTime < 21) {
 						idleTime = Math.Min(idleTime - 1, 20);
 						area.Top.Set((int)MathHelper.Lerp(-215, 0, NullandVoidUtils.EaseInPow((float)idleTime / 20, 3)), 1);
 					}
@@ -107,14 +109,14 @@ namespace NullandVoid.Common.UIs
 					}
 				}
 			}
-			
+
 			if (styleRank.Rank > 1) {
-				area.Left.Set( (int)(MathF.Sin(Main.rand.NextFloat()) * (styleRank.Rank - 1) * 2) - 315, 1);
+				area.Left.Set((int)(MathF.Sin(Main.rand.NextFloat()) * (styleRank.Rank - 1) * 2) - 315, 1);
 				area.Top.Set((int)(MathF.Sin(Main.rand.NextFloat()) * (styleRank.Rank - 1) * 2) - 215, 1);
 			}
-			
+
 			areaRect = area.GetInnerDimensions().ToRectangle();
-			
+
 			spriteBatch.Draw(bgBottom.Value, new Vector2(areaRect.Left - 31, areaRect.Bottom - bgBottom.Height() + 1), Color.White);
 
 			int freshness = (int)(stylePlayer.WeaponFreshness * 56);
@@ -123,7 +125,7 @@ namespace NullandVoid.Common.UIs
 			freshnessText.SetText($"x{MathF.Round(stylePlayer.WeaponFreshness + 0.25f, 2):0.00}");
 			freshnessText.Left.Set(-78, 0);
 			freshnessText.Top.Set(-20, 1);
-			
+
 			int styleBonusOffset = areaRect.Bottom - 65;
 			for (int i = Math.Max(0, stylePlayer.PlayerStyleBonuses.Count - ModContent.GetInstance<NullandVoidClientConfig>().MaxStyleBonuses); i < stylePlayer.PlayerStyleBonuses.Count; i++) {
 				PlayerStyleBonus styleBonus = stylePlayer.PlayerStyleBonuses[i];
@@ -135,15 +137,15 @@ namespace NullandVoid.Common.UIs
 					styleBonusOffset -= (int)((styleBonusTier * 4 + 17) * styleBonusFading);
 					if (styleBonusFading != 1) {
 						textColor = textColor.MultiplyRGB(new Color(styleBonusFading, styleBonusFading, styleBonusFading));
-						textColor.A = (byte)Math.Min(255, (styleBonusFading) * 256);
+						textColor.A = (byte)Math.Min(255, styleBonusFading * 256);
 					}
 				}
 				else {
 					styleBonusOffset -= styleBonusTier * 4 + 20;
 				}
-				
-				string text = $"{(styleBonus.BonusType.Tier == -1? "-" : "+")} {styleBonus.BonusType.Name.Value}" + (styleBonus.Count > 1? $"[x{styleBonus.Count}]" : "");
-				
+
+				string text = $"{(styleBonus.BonusType.Tier == -1 ? "-" : "+")} {styleBonus.BonusType.Name.Value}" + (styleBonus.Count > 1 ? $"[x{styleBonus.Count}]" : "");
+
 				if (styleBonus.BonusType.Tier > 1) {
 					spriteBatch.Draw(glowBar.Value, new Rectangle(areaRect.Left, styleBonusOffset - 2, areaRect.Width, 27), textColor.MultiplyRGBA(new Color(0.3f, 0.3f, 0.3f, 0)));
 				}
@@ -153,25 +155,25 @@ namespace NullandVoid.Common.UIs
 				spriteBatch.DrawString(FontAssets.MouseText.Value, text, new Vector2(areaRect.Left + 2 - styleBonusTier * 2, styleBonusOffset + 2), shadowColor, 0f, Vector2.Zero, 0.8f + 0.15f * styleBonusTier, SpriteEffects.None, 0f);
 				spriteBatch.DrawString(FontAssets.MouseText.Value, text, new Vector2(areaRect.Left - styleBonusTier * 2, styleBonusOffset), textColor, 0f, Vector2.Zero, 0.8f + 0.15f * styleBonusTier, SpriteEffects.None, 0f);
 			}
-			
+
 			styleRankText.TextColor = styleRank.Color;
 			styleRankText.SetText(styleRank.Name, 0.6f + styleRank.Rank * 0.03f, true);
 			spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(areaRect.Left - 1, areaRect.Bottom - 61, areaRect.Width + 2, 6), Color.Black);
-			
-			if (styleRank.Rank > 3) { 
+
+			if (styleRank.Rank > 3) {
 				spriteBatch.End();
 				spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Main.UIScaleMatrix);
 				GameShaders.Misc["NullandVoid:StyleBonusEffect"].UseImage1(effectUImages[styleRank.Rank - 4]);
-				GameShaders.Misc["NullandVoid:StyleBonusEffect"].Shader.Parameters["uUIPosition"].SetValue(new Vector2(areaRect.Left - Main.LocalPlayer.velocity.X * 10,  areaRect.Top - 35 - Main.LocalPlayer.velocity.Y * 10));
+				GameShaders.Misc["NullandVoid:StyleBonusEffect"].Shader.Parameters["uUIPosition"].SetValue(new Vector2(areaRect.Left - Main.LocalPlayer.velocity.X * 10, areaRect.Top - 35 - Main.LocalPlayer.velocity.Y * 10));
 				GameShaders.Misc["NullandVoid:StyleBonusEffect"].Apply();
-				 
+
 				spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(areaRect.Left, areaRect.Bottom - 60, areaRect.Width, 4), Color.Black);
 				styleRankText.Draw(spriteBatch);
-				 
+
 				spriteBatch.End();
 				spriteBatch.Begin(0, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.UIScaleMatrix);
 				freshnessText.Draw(spriteBatch);
-				
+
 				spriteBatch.DrawString(FontAssets.DeathText.Value, styleRank.Name.Value, new Vector2(areaRect.Left - 5, areaRect.Bottom - 50), styleRank.Color, 0f, Vector2.Zero, 0.6f + styleRank.Rank * 0.03f, SpriteEffects.None, 0f);
 			}
 			else {
@@ -180,19 +182,19 @@ namespace NullandVoid.Common.UIs
 				spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(areaRect.Left, areaRect.Bottom - 60, areaRect.Width, 4), styleRank.Color.MultiplyRGB(new Color(0.5f, 0.5f, 0.5f)));
 				base.Draw(spriteBatch);
 			}
-			
+
 			float styleFill = (int)(areaRect.Width * (float)(Math.Min(stylePlayer.StylePoints, styleRank.UpperBound) - styleRank.LowerBound) / (styleRank.UpperBound - styleRank.LowerBound));
 			styleVisualFill = (int)((styleVisualFill + styleFill * 0.5f) / 1.5f);
 			Color barColor = styleRank.Color;
 			barColor.A = 200;
 			spriteBatch.Draw(TextureAssets.MagicPixel.Value, new Rectangle(areaRect.Left, areaRect.Bottom - 60, styleVisualFill, 4), barColor);
-			
+
 			spriteBatch.Draw(bgTop.Value, new Vector2(areaRect.Left - 13, styleBonusOffset - bgTop.Height()), Color.White);
 		}
 	}
-	
+
 	[Autoload(Side = ModSide.Client)]
-	internal class StyleMeterSystem: ModSystem
+	internal class StyleMeterSystem : ModSystem
 	{
 		internal StyleMeterUI StyleMeterUI;
 		private UserInterface StyleMeterUserInterface;

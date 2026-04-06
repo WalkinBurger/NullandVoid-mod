@@ -23,7 +23,7 @@ namespace NullandVoid.Core
 		public void Set(SimpleStatModifier newModifier) {
 			modifier = newModifier;
 		}
-		
+
 		public void Set(int newStat, SimpleStatModifier newModifier) {
 			stat = newStat;
 			modifier = newModifier;
@@ -32,11 +32,11 @@ namespace NullandVoid.Core
 		public MovementStatI(int stat = 0) {
 			Set(stat, SimpleStatModifier.Default);
 		}
-		
+
 		public MovementStatI(SimpleStatModifier modifier, int stat) {
 			Set(stat, modifier);
 		}
-		
+
 		public int Get() => modifier.ApplyTo(stat);
 	}
 
@@ -52,7 +52,7 @@ namespace NullandVoid.Core
 		public void Set(SimpleStatModifier newModifier) {
 			modifier = newModifier;
 		}
-		
+
 		public void Set(float newStat, SimpleStatModifier newModifier) {
 			stat = newStat;
 			modifier = newModifier;
@@ -65,14 +65,15 @@ namespace NullandVoid.Core
 		public MovementStatF(SimpleStatModifier modifier, float stat = 0) {
 			Set(stat, modifier);
 		}
-		
+
 		public float Get() => modifier.ApplyTo(stat);
 	}
-	
+
 	public class StatMovement
 	{
 		public MovementStatI StaminaCost = new();
-		
+		public MovementStatI StaminaCostAlt = new();
+
 		public MovementStatI DashTime = new();
 		public MovementStatF DashSpeed = new();
 		public MovementStatI IFrame = new();
@@ -84,7 +85,7 @@ namespace NullandVoid.Core
 		public MovementStatI ImpactDamage = new();
 
 		public MovementStatF DistanceDecayRate = new();
-		public MovementStatI DamageCost = new();
+		public MovementStatF DamageAbsorption = new();
 		public MovementStatF SpiritSpeed = new();
 		public MovementStatF FlingSpeed = new();
 
@@ -94,6 +95,7 @@ namespace NullandVoid.Core
 
 		public void Reset() {
 			StaminaCost.Set(SimpleStatModifier.Default);
+			StaminaCostAlt.Set(SimpleStatModifier.Default);
 			DashTime.Set(SimpleStatModifier.Default);
 			DashSpeed.Set(SimpleStatModifier.Default);
 			IFrame.Set(SimpleStatModifier.Default);
@@ -103,12 +105,32 @@ namespace NullandVoid.Core
 			DamageReduction.Set(SimpleStatModifier.Default);
 			ImpactDamage.Set(SimpleStatModifier.Default);
 			DistanceDecayRate.Set(SimpleStatModifier.Default);
-			DamageCost.Set(SimpleStatModifier.Default);
+			DamageAbsorption.Set(SimpleStatModifier.Default);
 			SpiritSpeed.Set(SimpleStatModifier.Default);
 			FlingSpeed.Set(SimpleStatModifier.Default);
 			Range.Set(SimpleStatModifier.Default);
 			PullSpeed.Set(SimpleStatModifier.Default);
 			ReelSpeed.Set(SimpleStatModifier.Default);
 		}
+	}
+
+	public enum DasherType
+	{
+		Normal,
+	}
+
+	public enum ChargerType
+	{
+		Normal,
+	}
+
+	public enum SpiritType
+	{
+		Slime,
+	}
+	
+	public enum GrapplerType
+	{
+		NormalWooden,
 	}
 }

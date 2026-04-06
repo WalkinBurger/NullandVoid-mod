@@ -1,9 +1,7 @@
-using System;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NullandVoid.Common.Players;
-using ReLogic.Content;
+using NullandVoid.Utils;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ModLoader;
@@ -22,13 +20,15 @@ namespace NullandVoid.Common.Layers
 			Player player = drawInfo.drawPlayer;
 			MovementClassPlayer movementClassPlayer = player.GetModPlayer<MovementClassPlayer>();
 
-			Vector2 position = new(Main.screenWidth / 2, (Main.screenHeight / 2) - 10);
-			if (player.bodyFrame.Y / 56 >= 17 || (player.bodyFrame.Y / 56 < 14 && player.bodyFrame.Y / 56 >= 10)) {
-				position.Y += 2;
+			Vector2 position = NullandVoidUtils.ScreenCenter();
+			position.Y -= player.bodyFrame.Y / 56 >= 17 || (player.bodyFrame.Y / 56 < 14 && player.bodyFrame.Y / 56 >= 10) ? 8 : 10;
+			position.X -= 8 - 6 * player.direction;
+			if (player.whoAmI != Main.myPlayer) {
+				position += player.Center - Main.LocalPlayer.Center;
 			}
+
 			Color lightColor = Lighting.GetColor(player.Center.ToTileCoordinates());
-			
-			position.X -= 8 - (6 * player.direction);
+
 			drawInfo.DrawDataCache.Add(new DrawData(
 				movementClassPlayer.AccTexture.Value,
 				position,

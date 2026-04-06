@@ -14,7 +14,6 @@ namespace NullandVoid.Content.Buffs
 			player.GetDamage(DamageClass.Melee) *= 3;
 			player.GetKnockback(DamageClass.Melee) *= 2;
 			player.GetModPlayer<StylePlayer>().Lunging = true;
-			
 		}
 	}
 }

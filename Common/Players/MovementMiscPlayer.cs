@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using NullandVoid.Content.Projectiles;
 using NullandVoid.Core;
+using NullandVoid.Utils;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -9,11 +10,12 @@ using Terraria.ModLoader;
 
 namespace NullandVoid.Common.Players
 {
-	public enum PogoTypes {
+	public enum PogoTypes
+	{
 		Sword,
 		Ranged,
 	}
-	
+
 	public class MovementMiscPlayer : ModPlayer
 	{
 		public bool Grounded;
@@ -28,20 +30,20 @@ namespace NullandVoid.Common.Players
 				canNextPogo = true;
 			}
 		}
-		
+
 		public override void PostUpdateMiscEffects() {
-			Grounded = Player.velocity.Y == 0f;
-			
+			Grounded = Player.velocity.Y == 0f && WorldGen.SolidTile2((int)(Player.Center.X / 16), (int)(Player.Bottom.Y / 16));
+
 			if (Grounded && pogoing) {
 				pogoing = false;
 				Array.Clear(pogoCounts);
 				pogoCoolDown = 30;
-			} 
+			}
 			else if (pogoCoolDown != 0) {
 				pogoCoolDown--;
 			}
 		}
-		
+
 		public override void Load() {
 			On_Player.HorizontalMovement += DetourHorizontalMovement;
 		}
@@ -57,22 +59,23 @@ namespace NullandVoid.Common.Players
 			else if (self.GetModPlayer<MovementMiscPlayer>().Grounded && Math.Abs(self.velocity.X) > self.accRunSpeed + 1) {
 				self.runSlowdown = Math.Abs(self.velocity.X / 6);
 			}
+
 			orig(self);
 		}
 
-		
+
 		public bool CanPogo(PogoTypes pogoType) {
-			Vector2 aimPosition = (Main.MouseScreen - new Vector2 (Main.screenWidth / 2, Main.screenHeight / 2));
-			if (!canNextPogo || pogoCounts[(int)pogoType] > 4 || pogoCoolDown != 0 || Math.Abs(aimPosition.X) > 35f || aimPosition.Y > 70f || aimPosition.Y < 0 ) {
+			Vector2 aimPosition = Main.MouseScreen - NullandVoidUtils.ScreenCenter();
+			if (!canNextPogo || pogoCounts[(int)pogoType] > 4 || pogoCoolDown != 0 || Math.Abs(aimPosition.X) > 35f || aimPosition.Y > 70f || aimPosition.Y < 0) {
 				return false;
 			}
 
 			if (Main.mouseLeft) {
 				canNextPogo = false;
 			}
-			
+
 			pogoCounts[(int)pogoType]++;
-			
+
 			switch (pogoType) {
 				case PogoTypes.Sword:
 					for (int i = 0; i < 3; i++) {
@@ -80,6 +83,7 @@ namespace NullandVoid.Common.Players
 							return true;
 						}
 					}
+
 					return false;
 				case PogoTypes.Ranged:
 					return Player.velocity.Y is >= 0 and < 0.5f;
@@ -87,18 +91,19 @@ namespace NullandVoid.Common.Players
 					return true;
 			}
 		}
-		
+
 		public void Pogo(int boostVelocity, int count = -1) {
 			if (count == -1) {
 				count = pogoCounts[(int)PogoTypes.Sword];
 			}
+
 			Projectile.NewProjectile(Player.GetSource_FromThis(), Player.Bottom, Vector2.Zero, ModContent.ProjectileType<GlowStarProjectile>(), 0, 0, Main.myPlayer, 10f);
 			Player.GetModPlayer<StylePlayer>().AddStyleBonus(StyleBonus.Pogo);
 			pogoing = true;
 			Player.velocity.Y = -boostVelocity;
 			Player.fallStart = Player.position.ToTileCoordinates().Y;
 
-			
+
 			if (Main.netMode != NetmodeID.SinglePlayer) {
 				NullandVoidNetwork.SendSoundMessage(Player.whoAmI, SoundsID.Pogo, count);
 				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
@@ -109,7 +114,7 @@ namespace NullandVoid.Common.Players
 		}
 
 		public override void OnHitNPCWithItem(Item item, NPC target, NPC.HitInfo hit, int damageDone) {
-			if (!Grounded) {
+			if (!Grounded && !pogoing) {
 				Player.velocity.Y = -6;
 				NetMessage.SendData(MessageID.PlayerControls, number: Player.whoAmI);
 			}
